@@ -2,8 +2,6 @@ import sqlite3
 import time
 from pathlib import Path
 
-import pandas as pd
-
 SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
 
@@ -16,9 +14,11 @@ def get_connection(db_path: str) -> sqlite3.Connection:
 
 def init_db(db_path: str) -> None:
     conn = get_connection(db_path)
-    conn.executescript(SCHEMA_PATH.read_text())
-    conn.commit()
-    conn.close()
+    try:
+        conn.executescript(SCHEMA_PATH.read_text())
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def write_candle(db_path: str, pair: str, timeframe: str, candle: dict) -> int | None:
