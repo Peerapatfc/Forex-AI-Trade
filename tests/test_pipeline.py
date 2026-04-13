@@ -1,6 +1,7 @@
 import sqlite3
 import pytest
 import pandas as pd
+from unittest.mock import patch
 from storage import store
 
 
@@ -124,3 +125,87 @@ def test_get_latest_indicators_returns_dataframe(db_path):
 def test_get_candle_with_indicators_returns_empty_dict_for_missing(db_path):
     result = store.get_candle_with_indicators(db_path, "EURUSD", "15m", 9999999999)
     assert result == {}
+
+
+# ---- Integration tests (Task 8) ----
+
+_MOCK_5_CANDLES = pd.DataFrame([
+    {
+        "timestamp": 1705334400 + i * 900,
+        "open": round(1.0850 + i * 0.0001, 5),
+        "high": round(1.0860 + i * 0.0001, 5),
+        "low": round(1.0840 + i * 0.0001, 5),
+        "close": round(1.0855 + i * 0.0001, 5),
+        "volume": 1000.0,
+    }
+    for i in range(5)
+])
+
+
+@patch("data.fetcher.fetch_candles")
+def test_run_fetch_cycle_writes_candles(mock_fetch, db_path):
+    from data.fetcher import run_fetch_cycle
+    mock_fetch.return_value = (_MOCK_5_CANDLES, "alpha_vantage")
+
+    run_fetch_cycle(db_path, "fake_key", "EURUSD", "15m")
+
+    candles = store.get_latest_candles(db_path, "EURUSD", "15m", 10)
+    assert len(candles) == 5
+
+
+@patch("data.fetcher.fetch_candles")
+def test_run_fetch_cycle_writes_fetch_log_ok(mock_fetch, db_path):
+    import sqlite3
+    from data.fetcher import run_fetch_cycle
+    mock_fetch.return_value = (_MOCK_5_CANDLES, "alpha_vantage")
+
+    run_fetch_cycle(db_path, "fake_key", "EURUSD", "15m")
+
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute("SELECT provider, status FROM fetch_log").fetchall()
+    conn.close()
+    assert len(rows) == 1
+    assert rows[0] == ("alpha_vantage", "ok")
+
+
+@patch("data.fetcher.fetch_candles")
+def test_run_fetch_cycle_logs_skipped_when_both_fail(mock_fetch, db_path):
+    import sqlite3
+    from data.fetcher import run_fetch_cycle
+    mock_fetch.side_effect = RuntimeError("Both providers failed")
+
+    run_fetch_cycle(db_path, "fake_key", "EURUSD", "15m")
+
+    conn = sqlite3.connect(db_path)
+    row = conn.execute("SELECT status FROM fetch_log").fetchone()
+    conn.close()
+    assert row[0] == "skipped"
+
+
+@patch("data.fetcher.fetch_candles")
+def test_run_fetch_cycle_no_duplicate_candles(mock_fetch, db_path):
+    from data.fetcher import run_fetch_cycle
+    mock_fetch.return_value = (_MOCK_5_CANDLES, "alpha_vantage")
+
+    run_fetch_cycle(db_path, "fake_key", "EURUSD", "15m")
+    run_fetch_cycle(db_path, "fake_key", "EURUSD", "15m")  # same data again
+
+    candles = store.get_latest_candles(db_path, "EURUSD", "15m", 100)
+    assert len(candles) == 5  # not 10
+
+
+@patch("data.fetcher.fetch_candles")
+def test_run_fetch_cycle_store_interface_returns_correct_data(mock_fetch, db_path):
+    from data.fetcher import run_fetch_cycle
+    mock_fetch.return_value = (_MOCK_5_CANDLES, "alpha_vantage")
+
+    run_fetch_cycle(db_path, "fake_key", "EURUSD", "15m")
+
+    df = store.get_latest_candles(db_path, "EURUSD", "15m", 3)
+    assert len(df) == 3
+    assert "close" in df.columns
+
+    ts = int(_MOCK_5_CANDLES["timestamp"].iloc[-1])
+    result = store.get_candle_with_indicators(db_path, "EURUSD", "15m", ts)
+    assert result.get("pair") == "EURUSD"
+    assert "close" in result
