@@ -38,14 +38,10 @@ def calculate(df: pd.DataFrame) -> pd.DataFrame:
     # Volatility
     bb = ta.bbands(df["close"], length=20, std=2)
     if bb is not None and not bb.empty:
-        # pandas-ta >=0.4.x names BB cols with double std suffix: BBU_20_2.0_2.0
-        # Fall back to single suffix (BBU_20_2.0) for older versions.
-        col_upper = "BBU_20_2.0_2.0" if "BBU_20_2.0_2.0" in bb.columns else "BBU_20_2.0"
-        col_mid   = "BBM_20_2.0_2.0" if "BBM_20_2.0_2.0" in bb.columns else "BBM_20_2.0"
-        col_lower = "BBL_20_2.0_2.0" if "BBL_20_2.0_2.0" in bb.columns else "BBL_20_2.0"
-        df["bb_upper"] = bb[col_upper]
-        df["bb_mid"] = bb[col_mid]
-        df["bb_lower"] = bb[col_lower]
+        suffix = "2.0_2.0" if "BBU_20_2.0_2.0" in bb.columns else "2.0"
+        df["bb_upper"] = bb[f"BBU_20_{suffix}"]
+        df["bb_mid"] = bb[f"BBM_20_{suffix}"]
+        df["bb_lower"] = bb[f"BBL_20_{suffix}"]
     else:
         df["bb_upper"] = df["bb_mid"] = df["bb_lower"] = float("nan")
 

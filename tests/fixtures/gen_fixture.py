@@ -35,5 +35,8 @@ for i in range(CANDLES):
     price = close
 
 out = Path(__file__).parent / "eurusd_15m.json"
+if out.exists():
+    print(f"Fixture already exists at {out}. Delete it first to regenerate.")
+    raise SystemExit(1)
 out.write_text(json.dumps(rows, indent=2))
 print(f"Written {len(rows)} candles to {out}")
