@@ -2,6 +2,12 @@ import pytest
 import pandas as pd
 from unittest.mock import patch, MagicMock
 
+
+@pytest.fixture(autouse=True)
+def no_sleep(monkeypatch):
+    monkeypatch.setattr("data.providers.time.sleep", lambda s: None)
+
+
 # --- Alpha Vantage mock responses ---
 
 MOCK_AV_OK = {

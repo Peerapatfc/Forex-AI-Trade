@@ -1,6 +1,7 @@
 import logging
 import time
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -76,7 +77,9 @@ def fetch_alpha_vantage(
 
     rows = []
     for ts_str, ohlcv in data[key].items():
-        dt = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        dt = (datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+              .replace(tzinfo=ZoneInfo("America/New_York"))
+              .astimezone(timezone.utc))
         rows.append({
             "timestamp": int(dt.timestamp()),
             "open": float(ohlcv["1. open"]),
