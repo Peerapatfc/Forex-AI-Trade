@@ -1,6 +1,7 @@
 import sqlite3
 import time
 from pathlib import Path
+import pandas as pd
 
 SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
@@ -78,5 +79,59 @@ def write_fetch_log(
             (int(time.time()), pair, timeframe, provider, status, error_msg, duration_ms),
         )
         conn.commit()
+    finally:
+        conn.close()
+
+
+def get_latest_candles(db_path: str, pair: str, timeframe: str, n: int) -> pd.DataFrame:
+    """Return the n most recent candles, sorted oldest-first."""
+    conn = get_connection(db_path)
+    try:
+        df = pd.read_sql_query(
+            "SELECT * FROM candles WHERE pair=? AND timeframe=? "
+            "ORDER BY timestamp DESC LIMIT ?",
+            conn,
+            params=(pair, timeframe, n),
+        )
+        return df.sort_values("timestamp").reset_index(drop=True)
+    finally:
+        conn.close()
+
+
+def get_latest_indicators(db_path: str, pair: str, timeframe: str, n: int) -> pd.DataFrame:
+    """Return indicators for the n most recent candles, sorted oldest-first."""
+    conn = get_connection(db_path)
+    try:
+        df = pd.read_sql_query(
+            "SELECT i.* FROM indicators i "
+            "JOIN candles c ON i.candle_id = c.id "
+            "WHERE c.pair=? AND c.timeframe=? "
+            "ORDER BY c.timestamp DESC LIMIT ?",
+            conn,
+            params=(pair, timeframe, n),
+        )
+        return df.sort_values("id").reset_index(drop=True)
+    finally:
+        conn.close()
+
+
+def get_candle_with_indicators(
+    db_path: str, pair: str, timeframe: str, timestamp: int
+) -> dict:
+    """Return a single candle merged with its indicators as a flat dict. Empty dict if not found."""
+    conn = get_connection(db_path)
+    try:
+        row = conn.execute(
+            "SELECT c.id, c.pair, c.timeframe, c.timestamp, "
+            "c.open, c.high, c.low, c.close, c.volume, "
+            "i.ema20, i.ema50, i.ema200, i.rsi14, "
+            "i.macd, i.macd_signal, i.macd_hist, "
+            "i.bb_upper, i.bb_mid, i.bb_lower, "
+            "i.atr14, i.stoch_k, i.stoch_d "
+            "FROM candles c LEFT JOIN indicators i ON i.candle_id = c.id "
+            "WHERE c.pair=? AND c.timeframe=? AND c.timestamp=?",
+            (pair, timeframe, timestamp),
+        ).fetchone()
+        return dict(row) if row else {}
     finally:
         conn.close()
