@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from unittest.mock import patch, AsyncMock, MagicMock, call
+from unittest.mock import patch, AsyncMock
 from ai.analyzer import run_analysis_cycle
 
 
@@ -69,7 +69,8 @@ def test_disagreement_writes_hold(mock_claude, mock_gemini, mock_candles, mock_i
 @patch("ai.analyzer.store.write_signal")
 @patch("ai.analyzer.store.get_latest_candles")
 def test_empty_15m_candles_skips_analysis(mock_candles, mock_write):
-    mock_candles.return_value = pd.DataFrame()
+    # First call is 1H (returns full data), second call is 15m (returns empty)
+    mock_candles.side_effect = [_candles(20, interval=3600), pd.DataFrame()]
 
     run_analysis_cycle("test.db", "EURUSD", "15m")
 
@@ -110,6 +111,6 @@ def test_write_signal_failure_logs_and_does_not_crash(mock_claude, mock_gemini, 
     # Should not raise
     run_analysis_cycle("test.db", "EURUSD", "15m")
 
-    mock_log.assert_called_once()
-    args = mock_log.call_args[0]
-    assert args[4] == "error"  # status argument
+    mock_log.assert_called_once_with(
+        "test.db", "EURUSD", "15m", "ai_analyzer", "error", "DB write failed", None
+    )

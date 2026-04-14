@@ -24,6 +24,10 @@ def run_analysis_cycle(db_path: str, pair: str, timeframe: str) -> None:
     Reads latest candles + indicators from store, builds a prompt,
     calls both AI models in parallel, applies consensus, and writes
     the resulting signal.
+
+    Note: Uses asyncio.run() internally. Must not be called from within
+    an already-running event loop (e.g., from an AsyncIOScheduler job).
+    Currently safe because BlockingScheduler is used.
     """
     try:
         candles_1h = store.get_latest_candles(db_path, pair, "1H", 20)
