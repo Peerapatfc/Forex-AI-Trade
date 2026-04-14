@@ -15,6 +15,8 @@ class Signal:
     gemini_direction: str
     gemini_confidence: float
     reasoning: str
+    # Note: created_at is NOT included — it is set by the caller (ai/analyzer.py)
+    # when converting this dataclass to a dict for store.write_signal().
 
 
 def _avg_optional(a: float | None, b: float | None) -> float | None:
@@ -38,6 +40,14 @@ def resolve(
     """
     Apply hard-veto consensus: both models must agree on direction.
     Any disagreement → HOLD with confidence=0.0.
+
+    Precondition: claude["direction"] and gemini["direction"] must each be
+    one of {"BUY", "SELL", "HOLD"}. Input validation is the responsibility
+    of the AI clients (claude_client.py, gemini_client.py) before calling
+    this function. Invalid directions are treated as disagreements.
+
+    When both agree on HOLD, confidence is averaged (non-zero confidence
+    means "confident this is a non-trade" rather than "uncertain").
     """
     c_dir = claude["direction"]
     g_dir = gemini["direction"]
