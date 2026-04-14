@@ -61,3 +61,8 @@ def test_build_formats_indicator_values():
     result = build(_make_candles(5, interval=3600), _make_candles(5), _INDICATORS)
     assert "1.08280" in result  # ema20 formatted to 5 dp
     assert "58.3" in result     # rsi14 formatted to 1 dp
+
+
+def test_build_uses_pair_in_prompt():
+    result = build(_make_candles(5, interval=3600), _make_candles(5), {}, pair="GBPUSD")
+    assert "GBP/USD" in result

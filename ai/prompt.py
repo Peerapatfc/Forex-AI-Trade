@@ -5,13 +5,17 @@ def build(
     candles_1h: pd.DataFrame,
     candles_15m: pd.DataFrame,
     indicators: dict,
+    pair: str = "EURUSD",
 ) -> str:
     """Build the structured prompt string for AI model analysis."""
 
     def format_candles(df: pd.DataFrame) -> str:
         rows = []
         for _, row in df.iterrows():
-            ts = pd.Timestamp(int(row["timestamp"]), unit="s", tz="UTC").strftime("%Y-%m-%d %H:%M")
+            try:
+                ts = pd.Timestamp(int(row["timestamp"]), unit="s", tz="UTC").strftime("%Y-%m-%d %H:%M")
+            except (TypeError, ValueError, OSError):
+                ts = "N/A"
             rows.append(
                 f"{ts}, {float(row['open']):.5f}, {float(row['high']):.5f}, "
                 f"{float(row['low']):.5f}, {float(row['close']):.5f}, {float(row['volume']):.0f}"
@@ -46,7 +50,7 @@ def build(
     )
 
     return (
-        "You are a professional Forex analyst. Analyze the following EUR/USD market data "
+        f"You are a professional Forex analyst. Analyze the following {pair[:3]}/{pair[3:]} market data "
         "and return a trading signal as JSON.\n\n"
         f"## 1-Hour Context (last {len(candles_1h)} candles — trend/bias)\n"
         "timestamp, open, high, low, close, volume\n"
