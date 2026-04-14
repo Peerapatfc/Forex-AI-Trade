@@ -1,6 +1,15 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+import ai.claude_client as claude_client_module
 from ai.claude_client import _parse_response, analyze
+
+
+@pytest.fixture(autouse=True)
+def reset_claude_client():
+    """Reset the module-level cached client before each test."""
+    claude_client_module._client = None
+    yield
+    claude_client_module._client = None
 
 
 def test_parse_valid_json():

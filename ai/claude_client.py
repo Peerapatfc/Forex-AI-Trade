@@ -16,10 +16,19 @@ _HOLD_FALLBACK: dict = {
     "reasoning": "parse error",
 }
 
+_client: anthropic.AsyncAnthropic | None = None
+
+
+def _get_client() -> anthropic.AsyncAnthropic:
+    global _client
+    if _client is None:
+        _client = anthropic.AsyncAnthropic(api_key=config.ANTHROPIC_API_KEY)
+    return _client
+
 
 def _parse_response(text: str) -> dict:
     """Strip markdown fences and parse JSON response. Returns HOLD fallback on any error."""
-    text = re.sub(r"```(?:json)?\s*", "", text).strip().rstrip("`").strip()
+    text = re.sub(r"```(?:json)?", "", text).strip()
     try:
         data = json.loads(text)
     except (json.JSONDecodeError, ValueError):
@@ -54,8 +63,7 @@ def _parse_response(text: str) -> dict:
 async def analyze(prompt: str) -> dict:
     """Call Claude API and return parsed signal dict. Never raises."""
     try:
-        client = anthropic.AsyncAnthropic(api_key=config.ANTHROPIC_API_KEY)
-        message = await client.messages.create(
+        message = await _get_client().messages.create(
             model=config.CLAUDE_MODEL,
             max_tokens=300,
             temperature=0.2,
@@ -64,4 +72,4 @@ async def analyze(prompt: str) -> dict:
         return _parse_response(message.content[0].text)
     except Exception as exc:
         logger.warning("Claude analysis failed: %s", exc)
-        return dict(_HOLD_FALLBACK)
+        return {**_HOLD_FALLBACK, "reasoning": "api error"}
