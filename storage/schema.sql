@@ -57,3 +57,30 @@ CREATE TABLE IF NOT EXISTS signals (
     reasoning         TEXT,
     UNIQUE(pair, timeframe, timestamp)
 );
+
+CREATE TABLE IF NOT EXISTS account (
+    id         INTEGER PRIMARY KEY CHECK (id = 1),
+    balance    REAL    NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS trades (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    pair         TEXT    NOT NULL,
+    timeframe    TEXT    NOT NULL,
+    signal_id    INTEGER NOT NULL REFERENCES signals(id),
+    direction    TEXT    NOT NULL,
+    entry_price  REAL    NOT NULL,
+    sl_price     REAL    NOT NULL,
+    tp_price     REAL    NOT NULL,
+    lot_size     REAL    NOT NULL,
+    sl_pips      REAL    NOT NULL,
+    tp_pips      REAL    NOT NULL,
+    opened_at    INTEGER NOT NULL,
+    closed_at    INTEGER,
+    close_price  REAL,
+    close_reason TEXT,
+    pnl_pips     REAL,
+    pnl_usd      REAL,
+    status       TEXT    NOT NULL DEFAULT 'open'
+);

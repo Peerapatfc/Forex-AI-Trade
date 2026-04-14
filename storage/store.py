@@ -175,3 +175,109 @@ def get_latest_signals(db_path: str, pair: str, timeframe: str, n: int) -> pd.Da
         return df.sort_values("timestamp").reset_index(drop=True)
     finally:
         conn.close()
+
+
+def seed_account(db_path: str, initial_balance: float) -> None:
+    """Seed account with initial_balance on first run. Idempotent — no-op if row exists."""
+    conn = get_connection(db_path)
+    try:
+        conn.execute(
+            "INSERT OR IGNORE INTO account (id, balance, updated_at) VALUES (1, ?, ?)",
+            (initial_balance, int(time.time())),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_account_balance(db_path: str) -> float:
+    """Return current account balance. Returns 0.0 if account not yet seeded."""
+    conn = get_connection(db_path)
+    try:
+        row = conn.execute("SELECT balance FROM account WHERE id = 1").fetchone()
+        return float(row["balance"]) if row else 0.0
+    finally:
+        conn.close()
+
+
+def update_account_balance(db_path: str, new_balance: float) -> None:
+    conn = get_connection(db_path)
+    try:
+        conn.execute(
+            "UPDATE account SET balance = ?, updated_at = ? WHERE id = 1",
+            (new_balance, int(time.time())),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def write_trade(db_path: str, trade: dict) -> int:
+    """Insert a new trade. Returns the new row id."""
+    conn = get_connection(db_path)
+    try:
+        cur = conn.execute(
+            "INSERT INTO trades "
+            "(pair, timeframe, signal_id, direction, entry_price, sl_price, tp_price, "
+            "lot_size, sl_pips, tp_pips, opened_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                trade["pair"], trade["timeframe"], trade["signal_id"],
+                trade["direction"], trade["entry_price"],
+                trade["sl_price"], trade["tp_price"],
+                trade["lot_size"], trade["sl_pips"], trade["tp_pips"],
+                trade["opened_at"],
+            ),
+        )
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+def get_open_trades(db_path: str, pair: str) -> pd.DataFrame:
+    """Return all open trades for the given pair."""
+    conn = get_connection(db_path)
+    try:
+        return pd.read_sql_query(
+            "SELECT * FROM trades WHERE pair = ? AND status = 'open'",
+            conn,
+            params=(pair,),
+        )
+    finally:
+        conn.close()
+
+
+def close_trade(
+    db_path: str,
+    trade_id: int,
+    close_price: float,
+    close_reason: str,
+    pnl_pips: float,
+    pnl_usd: float,
+) -> None:
+    conn = get_connection(db_path)
+    try:
+        conn.execute(
+            "UPDATE trades SET status='closed', closed_at=?, close_price=?, "
+            "close_reason=?, pnl_pips=?, pnl_usd=? WHERE id=?",
+            (int(time.time()), close_price, close_reason, pnl_pips, pnl_usd, trade_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_closed_trades(db_path: str, pair: str, n: int) -> pd.DataFrame:
+    """Return the n most recent closed trades for the given pair, sorted oldest-first."""
+    conn = get_connection(db_path)
+    try:
+        df = pd.read_sql_query(
+            "SELECT * FROM trades WHERE pair = ? AND status = 'closed' "
+            "ORDER BY closed_at DESC LIMIT ?",
+            conn,
+            params=(pair, n),
+        )
+        return df.sort_values("closed_at").reset_index(drop=True)
+    finally:
+        conn.close()
