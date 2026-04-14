@@ -26,7 +26,7 @@ def create_scheduler(broker: Broker) -> BlockingScheduler:
                 "pair": config.PAIR,
                 "timeframe": timeframe,
             },
-            misfire_grace_time=interval_minutes * 30,
+            misfire_grace_time=interval_minutes * 60,
         )
         logger.info(
             "Scheduled %s %s fetch job every %d minutes",
@@ -43,7 +43,7 @@ def create_scheduler(broker: Broker) -> BlockingScheduler:
             "pair": config.PAIR,
             "timeframe": "15m",
         },
-        misfire_grace_time=15 * 30,
+        misfire_grace_time=15 * 60,
     )
     logger.info("Scheduled %s 15m analysis job every 15 minutes", config.PAIR)
 
@@ -59,7 +59,7 @@ def create_scheduler(broker: Broker) -> BlockingScheduler:
             "broker": broker,
             "risk_pct": config.RISK_PCT,
         },
-        misfire_grace_time=15 * 30,
+        misfire_grace_time=15 * 60,
     )
     logger.info("Scheduled %s 15m execution job every 15 minutes", config.PAIR)
 
