@@ -39,3 +39,21 @@ CREATE TABLE IF NOT EXISTS fetch_log (
     error_msg   TEXT,
     duration_ms INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS signals (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    pair              TEXT    NOT NULL,
+    timeframe         TEXT    NOT NULL,
+    timestamp         INTEGER NOT NULL,
+    created_at        INTEGER NOT NULL,
+    direction         TEXT    NOT NULL,
+    confidence        REAL    NOT NULL,
+    sl_pips           REAL,
+    tp_pips           REAL,
+    claude_direction  TEXT,
+    claude_confidence REAL,
+    gemini_direction  TEXT,
+    gemini_confidence REAL,
+    reasoning         TEXT,
+    UNIQUE(pair, timeframe, timestamp)
+);

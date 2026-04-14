@@ -11,7 +11,7 @@ def test_init_db_creates_tables(db_path):
         "SELECT name FROM sqlite_master WHERE type='table'"
     ).fetchall()}
     conn.close()
-    assert {"candles", "indicators", "fetch_log"} <= tables
+    assert {"candles", "indicators", "fetch_log", "signals"} <= tables
 
 
 def test_write_candle_returns_row_id(db_path):
