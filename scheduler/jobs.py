@@ -3,6 +3,7 @@ import logging
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 import config
+from ai.analyzer import run_analysis_cycle
 from data.fetcher import run_fetch_cycle
 
 logger = logging.getLogger(__name__)
@@ -26,8 +27,22 @@ def create_scheduler() -> BlockingScheduler:
             misfire_grace_time=interval_minutes * 30,
         )
         logger.info(
-            "Scheduled %s %s job every %d minutes",
+            "Scheduled %s %s fetch job every %d minutes",
             config.PAIR, timeframe, interval_minutes,
         )
+
+    scheduler.add_job(
+        run_analysis_cycle,
+        trigger="interval",
+        minutes=15,
+        id="analyze_15m",
+        kwargs={
+            "db_path": config.DB_PATH,
+            "pair": config.PAIR,
+            "timeframe": "15m",
+        },
+        misfire_grace_time=15 * 30,
+    )
+    logger.info("Scheduled %s 15m analysis job every 15 minutes", config.PAIR)
 
     return scheduler

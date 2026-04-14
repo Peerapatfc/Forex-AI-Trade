@@ -114,3 +114,14 @@ def test_write_signal_failure_logs_and_does_not_crash(mock_claude, mock_gemini, 
     mock_log.assert_called_once_with(
         "test.db", "EURUSD", "15m", "ai_analyzer", "error", "DB write failed", None
     )
+
+
+def test_scheduler_has_analysis_job():
+    from scheduler.jobs import create_scheduler
+    scheduler = create_scheduler()
+    job_ids = {job.id for job in scheduler.get_jobs()}
+    assert "analyze_15m" in job_ids
+    try:
+        scheduler.shutdown(wait=False)
+    except Exception:
+        pass
