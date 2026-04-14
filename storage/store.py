@@ -135,3 +135,43 @@ def get_candle_with_indicators(
         return dict(row) if row else {}
     finally:
         conn.close()
+
+
+def write_signal(db_path: str, signal: dict) -> int | None:
+    """Insert a signal. Returns new row id, or None if duplicate (same pair/timeframe/timestamp)."""
+    conn = get_connection(db_path)
+    try:
+        cur = conn.execute(
+            "INSERT OR IGNORE INTO signals "
+            "(pair, timeframe, timestamp, created_at, direction, confidence, "
+            "sl_pips, tp_pips, claude_direction, claude_confidence, "
+            "gemini_direction, gemini_confidence, reasoning) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                signal["pair"], signal["timeframe"], signal["timestamp"],
+                signal["created_at"], signal["direction"], signal["confidence"],
+                signal.get("sl_pips"), signal.get("tp_pips"),
+                signal.get("claude_direction"), signal.get("claude_confidence"),
+                signal.get("gemini_direction"), signal.get("gemini_confidence"),
+                signal.get("reasoning"),
+            ),
+        )
+        conn.commit()
+        return cur.lastrowid if cur.rowcount > 0 else None
+    finally:
+        conn.close()
+
+
+def get_latest_signals(db_path: str, pair: str, timeframe: str, n: int) -> pd.DataFrame:
+    """Return the n most recent signals, sorted oldest-first."""
+    conn = get_connection(db_path)
+    try:
+        df = pd.read_sql_query(
+            "SELECT * FROM signals WHERE pair=? AND timeframe=? "
+            "ORDER BY timestamp DESC LIMIT ?",
+            conn,
+            params=(pair, timeframe, n),
+        )
+        return df.sort_values("timestamp").reset_index(drop=True)
+    finally:
+        conn.close()
