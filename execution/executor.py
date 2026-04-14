@@ -69,11 +69,11 @@ def _cycle(
         logger.debug("Trade already open for %s — ignoring new signal", pair)
         return
 
-    # Step 7: Validate sl_pips
+    # Step 7: Validate sl_pips and tp_pips
     sl_pips = signal["sl_pips"]
     tp_pips = signal["tp_pips"]
-    if pd.isna(sl_pips) or sl_pips <= 0:
-        logger.warning("Signal for %s has no valid sl_pips — skipping open", pair)
+    if pd.isna(sl_pips) or sl_pips <= 0 or pd.isna(tp_pips) or tp_pips <= 0:
+        logger.warning("Signal for %s has no valid sl_pips/tp_pips — skipping open", pair)
         return
 
     # Step 8: Validate balance

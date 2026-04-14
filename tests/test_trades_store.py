@@ -78,6 +78,17 @@ def test_close_trade_updates_all_fields(db_path):
     assert row["status"] == "closed"
 
 
+def test_close_trade_is_idempotent(db_path):
+    signal_id = store.write_signal(db_path, _SIGNAL)
+    trade_id = store.write_trade(db_path, _trade(signal_id))
+    store.close_trade(db_path, trade_id, 1.0880, "tp", 30.0, 201.0)
+    store.close_trade(db_path, trade_id, 1.0900, "tp2", 99.0, 999.0)  # should be no-op
+    row = store.get_closed_trades(db_path, "EURUSD", 1).iloc[0]
+    assert row["close_price"] == pytest.approx(1.0880)
+    assert row["pnl_usd"] == pytest.approx(201.0)
+    assert row["close_reason"] == "tp"
+
+
 def test_get_closed_trades_excludes_open(db_path):
     signal_id = store.write_signal(db_path, _SIGNAL)
     store.write_trade(db_path, _trade(signal_id))

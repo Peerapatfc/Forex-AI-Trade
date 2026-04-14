@@ -83,8 +83,9 @@ def test_hold_signal_skips_open(mock_store):
 def test_existing_open_trade_skips_new_open(mock_store):
     # Candle that does NOT trigger the open trade's SL or TP
     # open trade: sl_price=1.0835, tp_price=1.0880; candle: low=1.0840, high=1.0870 → no hit
+    # get_open_trades is called twice: first for SL/TP check, then for one-trade-at-a-time guard
     mock_store.get_latest_candles.return_value = _candle(high=1.0870, low=1.0840)
-    mock_store.get_open_trades.return_value = _open_trade()
+    mock_store.get_open_trades.side_effect = [_open_trade(), _open_trade()]
     mock_store.get_latest_signals.return_value = _signal()
     broker = _mock_broker()
     run_execution_cycle("test.db", "EURUSD", "15m", broker)
@@ -167,6 +168,37 @@ def test_sl_takes_priority_over_tp_gap(mock_store):
     run_execution_cycle("test.db", "EURUSD", "15m", broker)
     broker.close_trade.assert_called_once()
     assert broker.close_trade.call_args[0][2] == "sl"
+
+
+@patch("execution.executor.store")
+def test_null_tp_pips_skips_open(mock_store):
+    mock_store.get_latest_candles.return_value = _candle()
+    mock_store.get_open_trades.return_value = pd.DataFrame()
+    mock_store.get_latest_signals.return_value = _signal(direction="BUY", sl=15.0, tp=None)
+    broker = _mock_broker()
+    run_execution_cycle("test.db", "EURUSD", "15m", broker)
+    broker.open_trade.assert_not_called()
+
+
+@patch("execution.executor.store")
+def test_zero_balance_skips_open(mock_store):
+    mock_store.get_latest_candles.return_value = _candle()
+    mock_store.get_open_trades.return_value = pd.DataFrame()
+    mock_store.get_latest_signals.return_value = _signal(direction="BUY", sl=15.0, tp=30.0)
+    broker = _mock_broker(balance=0.0)
+    run_execution_cycle("test.db", "EURUSD", "15m", broker)
+    broker.open_trade.assert_not_called()
+
+
+@patch("execution.executor.store")
+def test_zero_lot_size_skips_open(mock_store):
+    # Balance of 1.0 with sl=10000 pips produces lot < 0.01 → zero lot size
+    mock_store.get_latest_candles.return_value = _candle()
+    mock_store.get_open_trades.return_value = pd.DataFrame()
+    mock_store.get_latest_signals.return_value = _signal(direction="BUY", sl=10000.0, tp=20000.0)
+    broker = _mock_broker(balance=1.0)
+    run_execution_cycle("test.db", "EURUSD", "15m", broker)
+    broker.open_trade.assert_not_called()
 
 
 @patch("execution.executor.store")

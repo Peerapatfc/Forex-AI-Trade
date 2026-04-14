@@ -203,11 +203,13 @@ def get_account_balance(db_path: str) -> float:
 def update_account_balance(db_path: str, new_balance: float) -> None:
     conn = get_connection(db_path)
     try:
-        conn.execute(
+        cur = conn.execute(
             "UPDATE account SET balance = ?, updated_at = ? WHERE id = 1",
             (new_balance, int(time.time())),
         )
         conn.commit()
+        if cur.rowcount == 0:
+            raise RuntimeError("update_account_balance: account row not found — was seed_account called?")
     finally:
         conn.close()
 
