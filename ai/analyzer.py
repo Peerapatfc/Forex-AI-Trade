@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import logging
 import time
 
@@ -11,9 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 async def _parallel_analyze(prompt: str) -> tuple[dict, dict]:
-    return await asyncio.gather(
-        claude_client.analyze(prompt),
-        gemini_client.analyze(prompt),
+    return await asyncio.wait_for(
+        asyncio.gather(
+            claude_client.analyze(prompt),
+            gemini_client.analyze(prompt),
+        ),
+        timeout=30.0,
     )
 
 
@@ -49,21 +53,8 @@ def run_analysis_cycle(db_path: str, pair: str, timeframe: str) -> None:
         timestamp = int(candles_15m["timestamp"].iloc[-1])
         signal = resolve(claude_result, gemini_result, pair, timeframe, timestamp)
 
-        store.write_signal(db_path, {
-            "pair": signal.pair,
-            "timeframe": signal.timeframe,
-            "timestamp": signal.timestamp,
-            "created_at": int(time.time()),
-            "direction": signal.direction,
-            "confidence": signal.confidence,
-            "sl_pips": signal.sl_pips,
-            "tp_pips": signal.tp_pips,
-            "claude_direction": signal.claude_direction,
-            "claude_confidence": signal.claude_confidence,
-            "gemini_direction": signal.gemini_direction,
-            "gemini_confidence": signal.gemini_confidence,
-            "reasoning": signal.reasoning,
-        })
+        signal_dict = {**dataclasses.asdict(signal), "created_at": int(time.time())}
+        store.write_signal(db_path, signal_dict)
 
         logger.info(
             "Signal for %s %s: %s (confidence=%.2f, claude=%s, gemini=%s)",

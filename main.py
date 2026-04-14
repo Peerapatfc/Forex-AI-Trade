@@ -25,6 +25,12 @@ def main() -> None:
             "Copy .env.example to .env and add your key."
         )
         sys.exit(1)
+    if not config.ANTHROPIC_API_KEY:
+        logger.error("ANTHROPIC_API_KEY is not set. Add it to .env")
+        sys.exit(1)
+    if not config.GEMINI_API_KEY:
+        logger.error("GEMINI_API_KEY is not set. Add it to .env")
+        sys.exit(1)
 
     logger.info("Initialising database at %s", config.DB_PATH)
     init_db(config.DB_PATH)
