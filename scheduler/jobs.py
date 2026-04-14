@@ -5,11 +5,13 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import config
 from ai.analyzer import run_analysis_cycle
 from data.fetcher import run_fetch_cycle
+from execution.broker import Broker
+from execution.executor import run_execution_cycle
 
 logger = logging.getLogger(__name__)
 
 
-def create_scheduler() -> BlockingScheduler:
+def create_scheduler(broker: Broker) -> BlockingScheduler:
     scheduler = BlockingScheduler()
 
     for timeframe, interval_minutes in [("15m", 15), ("1H", 60)]:
@@ -44,5 +46,21 @@ def create_scheduler() -> BlockingScheduler:
         misfire_grace_time=15 * 30,
     )
     logger.info("Scheduled %s 15m analysis job every 15 minutes", config.PAIR)
+
+    scheduler.add_job(
+        run_execution_cycle,
+        trigger="interval",
+        minutes=15,
+        id="execute_15m",
+        kwargs={
+            "db_path": config.DB_PATH,
+            "pair": config.PAIR,
+            "timeframe": "15m",
+            "broker": broker,
+            "risk_pct": config.RISK_PCT,
+        },
+        misfire_grace_time=15 * 30,
+    )
+    logger.info("Scheduled %s 15m execution job every 15 minutes", config.PAIR)
 
     return scheduler

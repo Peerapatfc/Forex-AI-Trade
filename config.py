@@ -13,3 +13,7 @@ ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-opus-4-6")
 GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
+
+PAPER_BALANCE: float = float(os.getenv("PAPER_BALANCE", "10000"))
+RISK_PCT: float = float(os.getenv("RISK_PCT", "0.01"))
+BROKER_MODE: str = os.getenv("BROKER_MODE", "paper")
