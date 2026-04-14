@@ -1,6 +1,14 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from ai.gemini_client import _parse_response, analyze
+import ai.gemini_client as _gemini_module
+
+
+@pytest.fixture(autouse=True)
+def reset_gemini_model():
+    _gemini_module._model = None
+    yield
+    _gemini_module._model = None
 
 
 def test_parse_valid_json():

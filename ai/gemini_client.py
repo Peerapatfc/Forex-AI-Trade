@@ -16,6 +16,22 @@ _HOLD_FALLBACK: dict = {
     "reasoning": "parse error",
 }
 
+_model: genai.GenerativeModel | None = None
+
+
+def _get_model() -> genai.GenerativeModel:
+    global _model
+    if _model is None:
+        genai.configure(api_key=config.GEMINI_API_KEY)
+        _model = genai.GenerativeModel(
+            model_name=config.GEMINI_MODEL,
+            generation_config=genai.GenerationConfig(
+                temperature=0.2,
+                max_output_tokens=300,
+            ),
+        )
+    return _model
+
 
 def _parse_response(text: str) -> dict:
     """Strip markdown fences and parse JSON response. Returns HOLD fallback on any error."""
@@ -54,15 +70,7 @@ def _parse_response(text: str) -> dict:
 async def analyze(prompt: str) -> dict:
     """Call Gemini API and return parsed signal dict. Never raises."""
     try:
-        genai.configure(api_key=config.GEMINI_API_KEY)
-        model = genai.GenerativeModel(
-            model_name=config.GEMINI_MODEL,
-            generation_config=genai.GenerationConfig(
-                temperature=0.2,
-                max_output_tokens=300,
-            ),
-        )
-        response = await model.generate_content_async(prompt)
+        response = await _get_model().generate_content_async(prompt)
         return _parse_response(response.text)
     except Exception as exc:
         logger.warning("Gemini analysis failed: %s", exc)
