@@ -260,7 +260,7 @@ def close_trade(
     try:
         conn.execute(
             "UPDATE trades SET status='closed', closed_at=?, close_price=?, "
-            "close_reason=?, pnl_pips=?, pnl_usd=? WHERE id=?",
+            "close_reason=?, pnl_pips=?, pnl_usd=? WHERE id=? AND status='open'",
             (int(time.time()), close_price, close_reason, pnl_pips, pnl_usd, trade_id),
         )
         conn.commit()
