@@ -121,7 +121,9 @@ def test_scheduler_has_analysis_job():
     scheduler = create_scheduler()
     job_ids = {job.id for job in scheduler.get_jobs()}
     assert "analyze_15m" in job_ids
-    try:
-        scheduler.shutdown(wait=False)
-    except Exception:
-        pass
+    analysis_job = next(j for j in scheduler.get_jobs() if j.id == "analyze_15m")
+    assert analysis_job.trigger.interval.total_seconds() == 900  # 15 minutes
+    assert analysis_job.kwargs["timeframe"] == "15m"
+    assert "db_path" in analysis_job.kwargs
+    assert "pair" in analysis_job.kwargs
+    scheduler.remove_all_jobs()
