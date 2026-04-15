@@ -129,3 +129,17 @@ def test_scheduler_has_analysis_job():
     assert "db_path" in analysis_job.kwargs
     assert "pair" in analysis_job.kwargs
     scheduler.remove_all_jobs()
+
+
+def test_scheduler_has_stats_job():
+    from scheduler.jobs import create_scheduler
+    from unittest.mock import MagicMock
+    broker = MagicMock()
+    scheduler = create_scheduler(broker)
+    job_ids = {job.id for job in scheduler.get_jobs()}
+    assert "stats_15m" in job_ids
+    stats_job = next(j for j in scheduler.get_jobs() if j.id == "stats_15m")
+    assert stats_job.trigger.interval.total_seconds() == 900  # 15 minutes
+    assert "db_path" in stats_job.kwargs
+    assert "pair" in stats_job.kwargs
+    scheduler.remove_all_jobs()

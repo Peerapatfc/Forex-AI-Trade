@@ -7,6 +7,7 @@ from ai.analyzer import run_analysis_cycle
 from data.fetcher import run_fetch_cycle
 from execution.broker import Broker
 from execution.executor import run_execution_cycle
+from performance.stats import run_stats_cycle
 
 logger = logging.getLogger(__name__)
 
@@ -62,5 +63,15 @@ def create_scheduler(broker: Broker) -> BlockingScheduler:
         misfire_grace_time=15 * 60,
     )
     logger.info("Scheduled %s 15m execution job every 15 minutes", config.PAIR)
+
+    scheduler.add_job(
+        run_stats_cycle,
+        trigger="interval",
+        minutes=15,
+        id="stats_15m",
+        kwargs={"db_path": config.DB_PATH, "pair": config.PAIR},
+        misfire_grace_time=15 * 60,
+    )
+    logger.info("Scheduled %s 15m stats job every 15 minutes", config.PAIR)
 
     return scheduler
