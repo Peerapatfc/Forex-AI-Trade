@@ -84,3 +84,18 @@ CREATE TABLE IF NOT EXISTS trades (
     pnl_usd      REAL,
     status       TEXT    NOT NULL DEFAULT 'open'
 );
+
+CREATE TABLE IF NOT EXISTS stats (
+    pair             TEXT    NOT NULL PRIMARY KEY,
+    updated_at       INTEGER NOT NULL,
+    trade_count      INTEGER NOT NULL DEFAULT 0,
+    win_count        INTEGER NOT NULL DEFAULT 0,
+    loss_count       INTEGER NOT NULL DEFAULT 0,
+    win_rate         REAL    NOT NULL DEFAULT 0.0,
+    total_pnl_pips   REAL    NOT NULL DEFAULT 0.0,
+    total_pnl_usd    REAL    NOT NULL DEFAULT 0.0,
+    avg_win_pips     REAL,
+    avg_loss_pips    REAL,
+    profit_factor    REAL,
+    max_drawdown_usd REAL    NOT NULL DEFAULT 0.0
+);

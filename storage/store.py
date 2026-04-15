@@ -283,3 +283,36 @@ def get_closed_trades(db_path: str, pair: str, n: int) -> pd.DataFrame:
         return df.sort_values("closed_at").reset_index(drop=True)
     finally:
         conn.close()
+
+
+def write_stats(db_path: str, stats: dict) -> None:
+    """Upsert performance stats for a pair (INSERT OR REPLACE by pair primary key)."""
+    conn = get_connection(db_path)
+    try:
+        conn.execute(
+            "INSERT OR REPLACE INTO stats "
+            "(pair, updated_at, trade_count, win_count, loss_count, win_rate, "
+            "total_pnl_pips, total_pnl_usd, avg_win_pips, avg_loss_pips, "
+            "profit_factor, max_drawdown_usd) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                stats["pair"], stats["updated_at"],
+                stats["trade_count"], stats["win_count"], stats["loss_count"],
+                stats["win_rate"], stats["total_pnl_pips"], stats["total_pnl_usd"],
+                stats.get("avg_win_pips"), stats.get("avg_loss_pips"),
+                stats.get("profit_factor"), stats["max_drawdown_usd"],
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_stats(db_path: str, pair: str) -> dict | None:
+    """Return the stats row for the given pair as a plain dict, or None if not yet computed."""
+    conn = get_connection(db_path)
+    try:
+        row = conn.execute("SELECT * FROM stats WHERE pair = ?", (pair,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
