@@ -68,4 +68,7 @@ def run_stats_cycle(db_path: str, pair: str) -> None:
         store.write_stats(db_path, stats)
     except Exception as exc:
         logger.error("Stats cycle failed for %s: %s", pair, exc)
-        store.write_fetch_log(db_path, pair, "15m", "stats", "error", str(exc), None)
+        try:
+            store.write_fetch_log(db_path, pair, "15m", "stats", "error", str(exc), None)
+        except Exception:
+            pass

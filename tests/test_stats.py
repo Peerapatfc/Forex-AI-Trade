@@ -21,7 +21,11 @@ def test_empty_trades_returns_zeros(mock_store):
     mock_store.get_closed_trades.return_value = pd.DataFrame()
     result = compute_stats("test.db", "EURUSD")
     assert result["trade_count"] == 0
+    assert result["win_count"] == 0
+    assert result["loss_count"] == 0
     assert result["win_rate"] == 0.0
+    assert result["total_pnl_pips"] == 0.0
+    assert result["total_pnl_usd"] == 0.0
     assert result["profit_factor"] is None
     assert result["max_drawdown_usd"] == 0.0
     assert result["avg_win_pips"] is None
