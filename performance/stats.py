@@ -26,7 +26,7 @@ def compute_stats(db_path: str, pair: str) -> dict:
         }
 
     wins = trades[trades["pnl_usd"] > 0]
-    losses = trades[trades["pnl_usd"] < 0]
+    losses = trades[trades["pnl_usd"] <= 0]
 
     trade_count = len(trades)
     win_count = len(wins)
@@ -45,8 +45,9 @@ def compute_stats(db_path: str, pair: str) -> dict:
         profit_factor = None
 
     cumulative = trades["pnl_usd"].cumsum()
-    running_max = cumulative.cummax()
-    drawdown = cumulative - running_max
+    cum_with_start = pd.concat([pd.Series([0.0]), cumulative], ignore_index=True)
+    running_max = cum_with_start.cummax()
+    drawdown = cum_with_start - running_max
     max_drawdown_usd = float(abs(drawdown.min())) if drawdown.min() < 0 else 0.0
 
     return {

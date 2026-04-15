@@ -86,6 +86,28 @@ def test_no_drawdown_returns_zero(mock_store):
 
 
 @patch("performance.stats.store")
+def test_single_loss_produces_nonzero_drawdown(mock_store):
+    # A single $50 loss should produce max_drawdown_usd=50, not 0
+    mock_store.get_closed_trades.return_value = _trades(-50.0)
+    result = compute_stats("test.db", "EURUSD")
+    assert result["max_drawdown_usd"] == pytest.approx(50.0)
+
+
+@patch("performance.stats.store")
+def test_all_losing_trades(mock_store):
+    mock_store.get_closed_trades.return_value = _trades(-50.0, -30.0, -20.0)
+    result = compute_stats("test.db", "EURUSD")
+    assert result["win_count"] == 0
+    assert result["loss_count"] == 3
+    assert result["trade_count"] == 3
+    assert result["win_rate"] == pytest.approx(0.0)
+    assert result["avg_win_pips"] is None
+    assert result["avg_loss_pips"] is not None
+    assert result["profit_factor"] == pytest.approx(0.0)
+    assert result["max_drawdown_usd"] > 0  # losses must produce positive drawdown
+
+
+@patch("performance.stats.store")
 def test_exception_logs_and_does_not_raise(mock_store):
     mock_store.get_closed_trades.side_effect = Exception("DB error")
     run_stats_cycle("test.db", "EURUSD")  # must not raise
