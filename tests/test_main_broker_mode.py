@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import main as main_module
+
 
 def _run(config_attrs: dict):
     """
@@ -38,7 +40,6 @@ def _run(config_attrs: dict):
     for k, v in config_attrs.items():
         setattr(cfg, k, v)
 
-    import main as main_module
     with (
         patch.object(main_module, "config", cfg),
         patch.object(main_module, "store") as ms,
