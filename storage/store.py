@@ -18,6 +18,12 @@ def init_db(db_path: str) -> None:
     try:
         conn.executescript(SCHEMA_PATH.read_text())
         conn.commit()
+        # Migration: add mt5_ticket column if it doesn't exist yet
+        try:
+            conn.execute("ALTER TABLE trades ADD COLUMN mt5_ticket INTEGER")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
     finally:
         conn.close()
 
@@ -314,5 +320,25 @@ def get_stats(db_path: str, pair: str) -> dict | None:
     try:
         row = conn.execute("SELECT * FROM stats WHERE pair = ?", (pair,)).fetchone()
         return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def set_trade_ticket(db_path: str, trade_id: int, ticket: int) -> None:
+    """Store the MT5 ticket number for a trade."""
+    conn = get_connection(db_path)
+    try:
+        conn.execute("UPDATE trades SET mt5_ticket=? WHERE id=?", (ticket, trade_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_trade_ticket(db_path: str, trade_id: int) -> int | None:
+    """Return the MT5 ticket for a trade, or None if not set."""
+    conn = get_connection(db_path)
+    try:
+        row = conn.execute("SELECT mt5_ticket FROM trades WHERE id=?", (trade_id,)).fetchone()
+        return int(row["mt5_ticket"]) if row and row["mt5_ticket"] is not None else None
     finally:
         conn.close()
