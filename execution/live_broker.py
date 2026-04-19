@@ -31,7 +31,10 @@ class LiveBroker:
         tp = float(trade["tp_price"])
 
         order_type = mt5.ORDER_TYPE_BUY if direction == "BUY" else mt5.ORDER_TYPE_SELL
-        price = mt5.symbol_info_tick(symbol).ask if direction == "BUY" else mt5.symbol_info_tick(symbol).bid
+        tick = mt5.symbol_info_tick(symbol)
+        if tick is None:
+            raise RuntimeError(f"MT5 symbol_info_tick failed for {symbol}: {mt5.last_error()}")
+        price = tick.ask if direction == "BUY" else tick.bid
 
         request = {
             "action": mt5.TRADE_ACTION_DEAL,
@@ -75,12 +78,11 @@ class LiveBroker:
             symbol = pos.symbol
             lot = pos.volume
             # Close by opposite order
-            if pos.type == mt5.POSITION_TYPE_BUY:
-                order_type = mt5.ORDER_TYPE_SELL
-                price = mt5.symbol_info_tick(symbol).bid
-            else:
-                order_type = mt5.ORDER_TYPE_BUY
-                price = mt5.symbol_info_tick(symbol).ask
+            tick = mt5.symbol_info_tick(symbol)
+            if tick is None:
+                raise RuntimeError(f"MT5 symbol_info_tick failed for {symbol}: {mt5.last_error()}")
+            price = tick.bid if pos.type == mt5.POSITION_TYPE_BUY else tick.ask
+            order_type = mt5.ORDER_TYPE_SELL if pos.type == mt5.POSITION_TYPE_BUY else mt5.ORDER_TYPE_BUY
 
             request = {
                 "action": mt5.TRADE_ACTION_DEAL,

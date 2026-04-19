@@ -352,3 +352,7 @@ class TestStoreTicketFunctions:
         store.set_trade_ticket(db_path, trade_id, 111)
         store.set_trade_ticket(db_path, trade_id, 222)
         assert store.get_trade_ticket(db_path, trade_id) == 222
+
+    def test_set_trade_ticket_nonexistent_raises(self, db_path):
+        with pytest.raises(RuntimeError, match="set_trade_ticket: trade 9999 not found"):
+            store.set_trade_ticket(db_path, 9999, 12345)

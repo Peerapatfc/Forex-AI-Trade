@@ -328,8 +328,10 @@ def set_trade_ticket(db_path: str, trade_id: int, ticket: int) -> None:
     """Store the MT5 ticket number for a trade."""
     conn = get_connection(db_path)
     try:
-        conn.execute("UPDATE trades SET mt5_ticket=? WHERE id=?", (ticket, trade_id))
+        cur = conn.execute("UPDATE trades SET mt5_ticket=? WHERE id=?", (ticket, trade_id))
         conn.commit()
+        if cur.rowcount == 0:
+            raise RuntimeError(f"set_trade_ticket: trade {trade_id} not found")
     finally:
         conn.close()
 
