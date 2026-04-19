@@ -42,7 +42,7 @@ def main() -> None:
         backfill(config.DB_PATH, config.ALPHA_VANTAGE_API_KEY, config.PAIR, timeframe)
 
     if config.BROKER_MODE == "live":
-        if not config.MT5_LOGIN or not config.MT5_PASSWORD or not config.MT5_SERVER:
+        if config.MT5_LOGIN is None or not config.MT5_PASSWORD or not config.MT5_SERVER:
             logger.error("BROKER_MODE=live requires MT5_LOGIN, MT5_PASSWORD, MT5_SERVER in .env")
             sys.exit(1)
         from execution.live_broker import LiveBroker

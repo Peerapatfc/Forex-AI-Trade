@@ -24,6 +24,6 @@ BROKER_MODE: str = os.getenv("BROKER_MODE", "paper")
 PAPER_BALANCE: float = float(os.getenv("PAPER_BALANCE", "10000.0"))
 
 # MT5 live broker credentials
-MT5_LOGIN: int = int(os.getenv("MT5_LOGIN", "0"))
+MT5_LOGIN: int | None = int(os.getenv("MT5_LOGIN")) if os.getenv("MT5_LOGIN") else None
 MT5_PASSWORD: str = os.getenv("MT5_PASSWORD", "")
 MT5_SERVER: str = os.getenv("MT5_SERVER", "")
