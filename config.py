@@ -22,3 +22,8 @@ GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 # Broker
 BROKER_MODE: str = os.getenv("BROKER_MODE", "paper")
 PAPER_BALANCE: float = float(os.getenv("PAPER_BALANCE", "10000.0"))
+
+# MT5 live broker credentials
+MT5_LOGIN: int = int(os.getenv("MT5_LOGIN", "0"))
+MT5_PASSWORD: str = os.getenv("MT5_PASSWORD", "")
+MT5_SERVER: str = os.getenv("MT5_SERVER", "")

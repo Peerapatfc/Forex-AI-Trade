@@ -32,20 +32,26 @@ def main() -> None:
     if not config.GEMINI_API_KEY:
         logger.error("GEMINI_API_KEY is not set. Add it to .env")
         sys.exit(1)
-    if config.BROKER_MODE == "live":
-        logger.error("BROKER_MODE=live is not yet implemented. Use BROKER_MODE=paper.")
-        sys.exit(1)
-
     logger.info("Initialising database at %s", config.DB_PATH)
     store.init_db(config.DB_PATH)
     store.seed_account(config.DB_PATH, config.PAPER_BALANCE)
-    logger.info("Paper account balance: $%.2f", store.get_account_balance(config.DB_PATH))
+    logger.info("Account balance: $%.2f", store.get_account_balance(config.DB_PATH))
 
     logger.info("Backfilling history for %s...", config.PAIR)
     for timeframe in config.TIMEFRAMES:
         backfill(config.DB_PATH, config.ALPHA_VANTAGE_API_KEY, config.PAIR, timeframe)
 
-    broker = PaperBroker(config.DB_PATH)
+    if config.BROKER_MODE == "live":
+        if not config.MT5_LOGIN or not config.MT5_PASSWORD or not config.MT5_SERVER:
+            logger.error("BROKER_MODE=live requires MT5_LOGIN, MT5_PASSWORD, MT5_SERVER in .env")
+            sys.exit(1)
+        from execution.live_broker import LiveBroker
+        broker = LiveBroker(config.DB_PATH, config.MT5_LOGIN, config.MT5_PASSWORD, config.MT5_SERVER)
+    elif config.BROKER_MODE == "paper":
+        broker = PaperBroker(config.DB_PATH)
+    else:
+        logger.error("Unknown BROKER_MODE=%s. Use 'paper' or 'live'.", config.BROKER_MODE)
+        sys.exit(1)
     logger.info("Starting scheduler. Press Ctrl+C to stop.")
     scheduler = create_scheduler(broker)
     try:
