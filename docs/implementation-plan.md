@@ -2,7 +2,9 @@
 
 **Last updated:** 2026-04-19  
 **Test status:** 141/141 passing  
-**Backend status:** Fully functional in paper mode
+**Backend status:** Fully functional in paper mode — all bugs fixed  
+**API:** FastAPI in `api/` — run with `uvicorn api.main:app --host 0.0.0.0 --port 8000`  
+**Frontend:** Next.js 16 in `frontend/` — deploy to Vercel, set `NEXT_PUBLIC_API_URL`
 
 ---
 
@@ -61,31 +63,31 @@
 
 ---
 
-## Known Bugs (pre-Phase 5 blockers) ⚠️
+## Bugs ✅ ALL FIXED
 
 | # | Issue | Status |
 |---|-------|--------|
-| B1 | `config.py` missing `BROKER_MODE` + `PAPER_BALANCE` — `main.py` crashes on those attributes | ❌ BUG |
-| B2 | `requirements.txt` missing `anthropic`, `google-genai`, `pytest-asyncio` | ❌ BUG |
+| B1 | `config.py` missing `BROKER_MODE` + `PAPER_BALANCE` — `main.py` crashed on those attributes | ✅ Fixed |
+| B2 | `requirements.txt` missing `anthropic`, `google-genai`, `pytest-asyncio` | ✅ Fixed |
 
 ---
 
-## Phase 5: Frontend Dashboard (Vercel) ❌ NOT STARTED
+## Phase 5: Frontend Dashboard (Vercel) ✅ COMPLETE
 
 | # | Task | Status |
 |---|------|--------|
-| 5.1 | API layer — FastAPI endpoints (candles, signals, trades, stats) | ❌ |
-| 5.2 | `/api/status` — current signal + account balance | ❌ |
-| 5.3 | `/api/signals` — signal history with direction/confidence | ❌ |
-| 5.4 | `/api/trades` — open/closed trades with P&L | ❌ |
-| 5.5 | `/api/stats` — win rate, drawdown, total P&L | ❌ |
-| 5.6 | Frontend UI (Next.js) — dashboard layout | ❌ |
-| 5.7 | Charts — price + EMA overlay, equity curve | ❌ |
-| 5.8 | Signal feed — live direction badges (BUY/SELL/HOLD) + AI reasoning | ❌ |
-| 5.9 | Trade log table — entry/exit, SL/TP, P&L per trade | ❌ |
-| 5.10 | Stats panel — win rate %, drawdown %, total P&L | ❌ |
-| 5.11 | Vercel deployment config (`vercel.json`) | ❌ |
-| 5.12 | Environment vars on Vercel (read-only DB via API) | ❌ |
+| 5.1 | API layer — FastAPI endpoints (candles, signals, trades, stats) | ✅ |
+| 5.2 | `/api/status` — current signal + account balance | ✅ |
+| 5.3 | `/api/signals` — signal history with direction/confidence | ✅ |
+| 5.4 | `/api/trades` — open/closed trades with P&L | ✅ |
+| 5.5 | `/api/stats` — win rate, drawdown, total P&L | ✅ |
+| 5.6 | Frontend UI (Next.js 16) — dashboard layout | ✅ |
+| 5.7 | Charts — price + EMA overlay (lightweight-charts), equity curve | ✅ |
+| 5.8 | Signal feed — live direction badges (BUY/SELL/HOLD) + AI reasoning | ✅ |
+| 5.9 | Trade log table — entry/exit, SL/TP, P&L per trade | ✅ |
+| 5.10 | Stats panel — win rate %, drawdown %, total P&L | ✅ |
+| 5.11 | Vercel deployment config (`vercel.json`) | ✅ |
+| 5.12 | Environment vars on Vercel (read-only DB via API) | ✅ |
 
 ---
 
@@ -110,14 +112,14 @@
 | 2 — AI Analysis | ✅ Complete | ✅ |
 | 3 — Trade Execution | ✅ Complete | ✅ |
 | 4 — Performance Tracking | ✅ Complete | ✅ |
-| Pre-5 bugs (B1, B2) | ❌ 2 bugs to fix | — |
-| 5 — Frontend (Vercel) | ❌ Not started | — |
+| Pre-5 bugs (B1, B2) | ✅ Fixed | — |
+| 5 — Frontend (Vercel) | ✅ Complete | — |
 | 6 — Live Deployment | ❌ Not started | — |
 
 ## Recommended Next Steps
 
-1. Fix B1: add `BROKER_MODE` and `PAPER_BALANCE` to `config.py` and `.env.example`
-2. Fix B2: add missing deps to `requirements.txt`
-3. Push 2 pending commits to GitHub
+1. ~~Fix B1: add `BROKER_MODE` and `PAPER_BALANCE` to `config.py` and `.env.example`~~ ✅
+2. ~~Fix B2: add missing deps to `requirements.txt`~~ ✅
+3. Push pending commits to GitHub
 4. Start Phase 5 (frontend dashboard on Vercel)
 5. Start Phase 6 (live deployment) after Phase 5 ships
