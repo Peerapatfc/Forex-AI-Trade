@@ -70,14 +70,30 @@ def _make_mt5_mock(
     tick.bid = 1.0849
     mt5.symbol_info_tick.return_value = tick
 
-    # open order_send
+    # Build open result
     if order_result_none:
-        mt5.order_send.return_value = None
+        open_result = None
     else:
         open_result = MagicMock()
         open_result.retcode = mt5.TRADE_RETCODE_DONE if order_retcode is None else order_retcode
         open_result.order = 12345
-        mt5.order_send.return_value = open_result
+
+    # Build close result
+    if close_result_none:
+        close_result = None
+    else:
+        close_result = MagicMock()
+        close_result.retcode = mt5.TRADE_RETCODE_DONE if close_retcode is None else close_retcode
+        close_result.order = 12346
+
+    # Distinguish open vs close calls by the presence of the "position" key in the
+    # request dict (close orders always carry a position ticket, open orders do not).
+    def _order_send_side_effect(request):
+        if "position" in request:
+            return close_result
+        return open_result
+
+    mt5.order_send.side_effect = _order_send_side_effect
 
     # positions_get
     if no_open_position:
@@ -272,18 +288,15 @@ class TestCloseTrade:
         assert request["price"] == 1.0851  # ask
 
     def test_close_trade_order_send_none_raises(self, db_path):
-        mt5_mock = _make_mt5_mock(close_result_none=True, order_result_none=True)
+        mt5_mock = _make_mt5_mock(close_result_none=True, order_result_none=False)
         with _patch_mt5(mt5_mock) as lb_mod:
             broker, trade_id = self._setup(db_path, mt5_mock, lb_mod)
             with pytest.raises(RuntimeError, match="MT5 close order failed"):
                 broker.close_trade(trade_id, 1.0880, "tp", 30.0, 201.0)
 
     def test_close_trade_bad_retcode_raises(self, db_path):
-        """Simulate close order_send returning bad retcode."""
-        # We need to make close order_send fail but open order_send succeed.
-        # Since we set up trade manually (no open_trade call), order_send
-        # will only be called once (for close). Use order_retcode=10004.
-        mt5_mock = _make_mt5_mock(order_retcode=10004)
+        """Simulate close order_send returning bad retcode while open succeeds."""
+        mt5_mock = _make_mt5_mock(close_retcode=10004)
         with _patch_mt5(mt5_mock) as lb_mod:
             broker, trade_id = self._setup(db_path, mt5_mock, lb_mod)
             with pytest.raises(RuntimeError, match="MT5 close order failed"):
