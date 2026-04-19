@@ -2,7 +2,8 @@ import json
 import logging
 import re
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 import config
 
@@ -16,21 +17,14 @@ _HOLD_FALLBACK: dict = {
     "reasoning": "parse error",
 }
 
-_model: genai.GenerativeModel | None = None
+_client: genai.Client | None = None
 
 
-def _get_model() -> genai.GenerativeModel:
-    global _model
-    if _model is None:
-        genai.configure(api_key=config.GEMINI_API_KEY)
-        _model = genai.GenerativeModel(
-            model_name=config.GEMINI_MODEL,
-            generation_config=genai.GenerationConfig(
-                temperature=0.2,
-                max_output_tokens=300,
-            ),
-        )
-    return _model
+def _get_client() -> genai.Client:
+    global _client
+    if _client is None:
+        _client = genai.Client(api_key=config.GEMINI_API_KEY)
+    return _client
 
 
 def _parse_response(text: str) -> dict:
@@ -70,7 +64,15 @@ def _parse_response(text: str) -> dict:
 async def analyze(prompt: str) -> dict:
     """Call Gemini API and return parsed signal dict. Never raises."""
     try:
-        response = await _get_model().generate_content_async(prompt)
+        client = _get_client()
+        response = await client.aio.models.generate_content(
+            model=config.GEMINI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.2,
+                max_output_tokens=300,
+            ),
+        )
         return _parse_response(response.text)
     except Exception as exc:
         logger.warning("Gemini analysis failed: %s", exc)

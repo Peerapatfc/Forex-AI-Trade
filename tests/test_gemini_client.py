@@ -5,10 +5,11 @@ import ai.gemini_client as _gemini_module
 
 
 @pytest.fixture(autouse=True)
-def reset_gemini_model():
-    _gemini_module._model = None
+def reset_gemini_client():
+    """Reset the module-level cached client before each test."""
+    _gemini_module._client = None
     yield
-    _gemini_module._model = None
+    _gemini_module._client = None
 
 
 def test_parse_valid_json():
@@ -46,11 +47,17 @@ def test_parse_confidence_clamped():
 async def test_analyze_returns_parsed_signal():
     mock_response = MagicMock()
     mock_response.text = '{"direction": "BUY", "confidence": 0.75, "sl_pips": 15.0, "tp_pips": 30.0, "reasoning": "test"}'
-    mock_model = MagicMock()
-    mock_model.generate_content_async = AsyncMock(return_value=mock_response)
 
-    with patch("ai.gemini_client.genai.configure"), \
-         patch("ai.gemini_client.genai.GenerativeModel", return_value=mock_model):
+    mock_aio_models = MagicMock()
+    mock_aio_models.generate_content = AsyncMock(return_value=mock_response)
+
+    mock_aio = MagicMock()
+    mock_aio.models = mock_aio_models
+
+    mock_client = MagicMock()
+    mock_client.aio = mock_aio
+
+    with patch("ai.gemini_client.genai.Client", return_value=mock_client):
         result = await analyze("test prompt")
 
     assert result["direction"] == "BUY"
@@ -59,8 +66,7 @@ async def test_analyze_returns_parsed_signal():
 
 @pytest.mark.asyncio
 async def test_analyze_returns_hold_on_api_exception():
-    with patch("ai.gemini_client.genai.configure"), \
-         patch("ai.gemini_client.genai.GenerativeModel", side_effect=Exception("quota exceeded")):
+    with patch("ai.gemini_client.genai.Client", side_effect=Exception("quota exceeded")):
         result = await analyze("test prompt")
 
     assert result["direction"] == "HOLD"
@@ -71,11 +77,17 @@ async def test_analyze_returns_hold_on_api_exception():
 async def test_analyze_returns_hold_on_malformed_response():
     mock_response = MagicMock()
     mock_response.text = "I am unable to provide financial advice."
-    mock_model = MagicMock()
-    mock_model.generate_content_async = AsyncMock(return_value=mock_response)
 
-    with patch("ai.gemini_client.genai.configure"), \
-         patch("ai.gemini_client.genai.GenerativeModel", return_value=mock_model):
+    mock_aio_models = MagicMock()
+    mock_aio_models.generate_content = AsyncMock(return_value=mock_response)
+
+    mock_aio = MagicMock()
+    mock_aio.models = mock_aio_models
+
+    mock_client = MagicMock()
+    mock_client.aio = mock_aio
+
+    with patch("ai.gemini_client.genai.Client", return_value=mock_client):
         result = await analyze("test prompt")
 
     assert result["direction"] == "HOLD"
