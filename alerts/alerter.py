@@ -33,7 +33,7 @@ class Alerter:
         return bool(self._tg_token and self._tg_chat_id)
 
     def _email_enabled(self) -> bool:
-        return bool(self._smtp_host and self._smtp_user and self._smtp_to)
+        return bool(self._smtp_host and self._smtp_user and self._smtp_to and self._smtp_password)
 
     def send(self, subject: str, body: str) -> None:
         """Send alert to all configured channels. Never raises."""

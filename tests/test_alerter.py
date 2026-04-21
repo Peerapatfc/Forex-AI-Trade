@@ -36,7 +36,7 @@ def _telegram_only():
 
 
 def _email_only():
-    return Alerter(smtp_host="smtp.example.com", smtp_user="u@x.com", smtp_to="t@x.com")
+    return Alerter(smtp_host="smtp.example.com", smtp_user="u@x.com", smtp_to="t@x.com", smtp_password="secret")
 
 
 def _no_config():
@@ -278,3 +278,39 @@ def test_run_execution_cycle_no_alerter_still_works(mock_store):
     # Should not raise
     run_execution_cycle("test.db", "EURUSD", "15m", broker)
     broker.open_trade.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# alert_trade_closed — breakeven boundary
+# ---------------------------------------------------------------------------
+
+def test_alert_trade_closed_breakeven_shows_checkmark():
+    alerter = _no_config()
+    sent = []
+    alerter.send = lambda subject, body: sent.append((subject, body))
+    alerter.alert_trade_closed(1, "EURUSD", "BUY", "sl", 0.0, 0.0)
+    subject, _ = sent[0]
+    assert "\u2705" in subject
+
+
+# ---------------------------------------------------------------------------
+# Executor integration: alerter called on SL hit
+# ---------------------------------------------------------------------------
+
+@patch("execution.executor.store")
+def test_run_execution_cycle_calls_alert_trade_closed_on_sl(mock_store):
+    trade = _open_trade("BUY", sl_price=1.0835, tp_price=1.0880)
+    # low=1.0830 <= sl_price=1.0835 → SL hit
+    mock_store.get_latest_candles.return_value = _candle(high=1.0860, low=1.0830, close=1.0840)
+    mock_store.get_open_trades.side_effect = [trade, pd.DataFrame()]
+    mock_store.get_latest_signals.return_value = pd.DataFrame()
+
+    broker = MagicMock()
+    broker.get_balance.return_value = 10000.0
+
+    alerter = MagicMock()
+    run_execution_cycle("test.db", "EURUSD", "15m", broker, alerter=alerter)
+
+    alerter.alert_trade_closed.assert_called_once()
+    args = alerter.alert_trade_closed.call_args[0]
+    assert args[3] == "sl"  # close_reason
