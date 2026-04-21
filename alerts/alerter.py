@@ -38,7 +38,7 @@ class Alerter:
     def send(self, subject: str, body: str) -> None:
         """Send alert to all configured channels. Never raises."""
         if self._telegram_enabled():
-            self._send_telegram(f"*{subject}*\n{body}")
+            self._send_telegram(f"{subject}\n{body}")
         if self._email_enabled():
             self._send_email(subject, body)
 
@@ -47,7 +47,7 @@ class Alerter:
             url = f"https://api.telegram.org/bot{self._tg_token}/sendMessage"
             resp = requests.post(
                 url,
-                json={"chat_id": self._tg_chat_id, "text": text, "parse_mode": "Markdown"},
+                json={"chat_id": self._tg_chat_id, "text": text},
                 timeout=10,
             )
             resp.raise_for_status()

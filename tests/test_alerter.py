@@ -1,3 +1,4 @@
+import logging
 import smtplib
 import time
 from unittest.mock import MagicMock, patch
@@ -7,6 +8,7 @@ import pytest
 
 from alerts.alerter import Alerter
 from execution.executor import run_execution_cycle
+from tests.test_executor import _candle, _signal, _open_trade
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +91,6 @@ def test_send_no_config_does_nothing(mock_smtp_cls, mock_post):
 
 @patch("alerts.alerter.requests.post", side_effect=Exception("network error"))
 def test_send_telegram_failure_logs_and_does_not_raise(mock_post, caplog):
-    import logging
     alerter = _telegram_only()
     with caplog.at_level(logging.ERROR, logger="alerts.alerter"):
         alerter.send("Subject", "Body")  # must not raise
@@ -98,7 +99,6 @@ def test_send_telegram_failure_logs_and_does_not_raise(mock_post, caplog):
 
 @patch("alerts.alerter.smtplib.SMTP", side_effect=Exception("connection refused"))
 def test_send_email_failure_logs_and_does_not_raise(mock_smtp, caplog):
-    import logging
     alerter = _email_only()
     with caplog.at_level(logging.ERROR, logger="alerts.alerter"):
         alerter.send("Subject", "Body")  # must not raise
@@ -187,34 +187,6 @@ def test_alert_error_correct_subject_body():
 # ---------------------------------------------------------------------------
 # Executor integration: alerter called on trade open
 # ---------------------------------------------------------------------------
-
-def _candle(high=1.0870, low=1.0840, close=1.0855, ts=None):
-    ts = ts or int(time.time()) - 60
-    return pd.DataFrame([{
-        "id": 1, "pair": "EURUSD", "timeframe": "15m", "timestamp": ts,
-        "open": 1.0850, "high": high, "low": low, "close": close, "volume": 1000.0,
-    }])
-
-
-def _signal(direction="BUY", sl=15.0, tp=30.0, ts=None):
-    ts = ts or int(time.time()) - 60
-    return pd.DataFrame([{
-        "id": 1, "pair": "EURUSD", "timeframe": "15m", "timestamp": ts,
-        "created_at": ts + 10, "direction": direction, "confidence": 0.75,
-        "sl_pips": sl, "tp_pips": tp, "reasoning": "test",
-        "claude_direction": direction, "claude_confidence": 0.75,
-        "gemini_direction": direction, "gemini_confidence": 0.75,
-    }])
-
-
-def _open_trade(direction="BUY", sl_price=1.0835, tp_price=1.0880):
-    return pd.DataFrame([{
-        "id": 1, "pair": "EURUSD", "direction": direction,
-        "entry_price": 1.0850, "sl_price": sl_price, "tp_price": tp_price,
-        "lot_size": 0.67, "sl_pips": 15.0, "tp_pips": 30.0,
-        "opened_at": int(time.time()) - 200, "status": "open",
-    }])
-
 
 @patch("execution.executor.store")
 def test_run_execution_cycle_calls_alert_trade_opened(mock_store):
