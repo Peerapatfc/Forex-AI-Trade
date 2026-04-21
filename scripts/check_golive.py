@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from performance.stats import compute_stats
 
 
-def check_criteria(stats: dict, args: argparse.Namespace) -> list[tuple[str, bool, str]]:
+def check_criteria(stats: dict, args: argparse.Namespace) -> list[tuple[str, bool | None, str]]:
     """
     Returns list of (label, passed, detail) tuples.
     passed=None means SKIP.
@@ -67,7 +67,7 @@ def check_criteria(stats: dict, args: argparse.Namespace) -> list[tuple[str, boo
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Check go-live criteria")
     parser.add_argument("--db", default="forex.db", help="Path to SQLite DB")
-    parser.add_argument("--pair", default="EURUSD")
+    parser.add_argument("--pair", default="EURUSD", help="Currency pair to evaluate (default: EURUSD)")
     parser.add_argument("--min-trades", type=int, default=30)
     parser.add_argument("--min-win-rate", type=float, default=0.50)
     parser.add_argument("--min-pnl", type=float, default=0.0)
@@ -79,6 +79,10 @@ def main(argv=None) -> int:
 
     print(f"\n=== Go-Live Criteria Check ===")
     print(f"Pair: {args.pair}\n")
+
+    if stats["trade_count"] == 0:
+        print("  [WARN] No closed trades found — criteria results may be vacuous.")
+        print()
 
     results = check_criteria(stats, args)
     failed = 0

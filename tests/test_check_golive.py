@@ -16,6 +16,11 @@ FAILING_STATS = {
     "total_pnl_usd": -50.0, "max_drawdown_usd": 700.0, "profit_factor": 0.8,
 }
 
+EMPTY_STATS = {
+    "trade_count": 0, "win_count": 0, "win_rate": 0.0,
+    "total_pnl_usd": 0.0, "max_drawdown_usd": 0.0, "profit_factor": None,
+}
+
 
 def _make_args(**overrides):
     """Build a Namespace with default thresholds, optionally overridden."""
@@ -131,6 +136,16 @@ def test_check_criteria_structure():
 
 
 # ---------------------------------------------------------------------------
+# 8. Zero trades -> output contains [WARN]
+# ---------------------------------------------------------------------------
+def test_zero_trades_warn(capsys):
+    with patch("scripts.check_golive.compute_stats", return_value=EMPTY_STATS):
+        main(["--db", "forex.db", "--pair", "EURUSD"])
+    out = capsys.readouterr().out
+    assert "[WARN]" in out
+
+
+# ---------------------------------------------------------------------------
 # Bonus: check FAIL detail strings use correct comparison symbols
 # ---------------------------------------------------------------------------
 def test_fail_detail_strings(capsys):
@@ -138,4 +153,4 @@ def test_fail_detail_strings(capsys):
         main(["--db", "forex.db", "--pair", "EURUSD"])
     out = capsys.readouterr().out
     assert "[FAIL]" in out
-    assert "[PASS]" not in out or "[FAIL]" in out  # at least one fail
+    assert "[PASS]" not in out  # FAILING_STATS must fail all criteria
