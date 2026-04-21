@@ -52,8 +52,19 @@ def main() -> None:
     else:
         logger.error("Unknown BROKER_MODE=%s. Use 'paper' or 'live'.", config.BROKER_MODE)
         sys.exit(1)
+    from alerts.alerter import Alerter
+    alerter = Alerter(
+        telegram_token=config.TELEGRAM_TOKEN,
+        telegram_chat_id=config.TELEGRAM_CHAT_ID,
+        smtp_host=config.SMTP_HOST,
+        smtp_port=config.SMTP_PORT,
+        smtp_user=config.SMTP_USER,
+        smtp_password=config.SMTP_PASSWORD,
+        smtp_to=config.SMTP_TO,
+    )
+
     logger.info("Starting scheduler. Press Ctrl+C to stop.")
-    scheduler = create_scheduler(broker)
+    scheduler = create_scheduler(broker, alerter)
     try:
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):

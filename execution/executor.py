@@ -19,20 +19,23 @@ def run_execution_cycle(
     timeframe: str,
     broker: Broker,
     risk_pct: float = 0.01,
+    alerter=None,
 ) -> None:
     """
     Execute one full cycle: check SL/TP on open trades, then open a new trade if warranted.
     Never raises — all exceptions are logged to fetch_log with provider='executor'.
     """
     try:
-        _cycle(db_path, pair, timeframe, broker, risk_pct)
+        _cycle(db_path, pair, timeframe, broker, risk_pct, alerter)
     except Exception as exc:
         logger.error("Execution cycle failed for %s %s: %s", pair, timeframe, exc)
         store.write_fetch_log(db_path, pair, timeframe, "executor", "error", str(exc), None)
+        if alerter is not None:
+            alerter.alert_error("executor", str(exc))
 
 
 def _cycle(
-    db_path: str, pair: str, timeframe: str, broker: Broker, risk_pct: float
+    db_path: str, pair: str, timeframe: str, broker: Broker, risk_pct: float, alerter=None
 ) -> None:
     # Step 1: Get latest candle for SL/TP checking and entry price
     candles = store.get_latest_candles(db_path, pair, timeframe, 1)
@@ -44,7 +47,7 @@ def _cycle(
     # Step 2: Check SL/TP on all open trades
     open_trades = store.get_open_trades(db_path, pair)
     for _, trade in open_trades.iterrows():
-        _check_sl_tp(trade, candle, broker)
+        _check_sl_tp(trade, candle, broker, alerter)
 
     # Step 3: Get latest signal
     signals = store.get_latest_signals(db_path, pair, timeframe, 1)
@@ -119,9 +122,11 @@ def _cycle(
         "Opened %s %s: entry=%.5f SL=%.5f TP=%.5f lot=%.2f",
         direction, pair, entry_price, sl_price, tp_price, lot_size,
     )
+    if alerter is not None:
+        alerter.alert_trade_opened(trade)
 
 
-def _check_sl_tp(trade, candle, broker: Broker) -> None:
+def _check_sl_tp(trade, candle, broker: Broker, alerter=None) -> None:
     """Check if the open trade's SL or TP was hit by the current candle."""
     direction = trade["direction"]
     high = float(candle["high"])
@@ -158,3 +163,6 @@ def _check_sl_tp(trade, candle, broker: Broker) -> None:
         "Closed %s trade %d on %s: %.1f pips / $%.2f",
         direction, trade_id, close_reason.upper(), pnl_pips, pnl_usd,
     )
+    if alerter is not None:
+        pair = str(trade.get("pair", "?"))
+        alerter.alert_trade_closed(trade_id, pair, direction, close_reason, pnl_pips, pnl_usd)

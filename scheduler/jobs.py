@@ -12,7 +12,7 @@ from performance.stats import run_stats_cycle
 logger = logging.getLogger(__name__)
 
 
-def create_scheduler(broker: Broker) -> BlockingScheduler:
+def create_scheduler(broker: Broker, alerter=None) -> BlockingScheduler:
     scheduler = BlockingScheduler()
 
     for timeframe, interval_minutes in [("15m", 15), ("1H", 60)]:
@@ -59,6 +59,7 @@ def create_scheduler(broker: Broker) -> BlockingScheduler:
             "timeframe": "15m",
             "broker": broker,
             "risk_pct": config.RISK_PCT,
+            "alerter": alerter,
         },
         misfire_grace_time=15 * 60,
     )
