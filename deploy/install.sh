@@ -29,19 +29,21 @@ PROJECT_ROOT="$(dirname "${SCRIPT_DIR}")"
 
 if [[ -f "${PROJECT_ROOT}/main.py" ]]; then
     echo "    Copying project files from ${PROJECT_ROOT} to ${INSTALL_DIR}..."
-    # rsync preferred; fall back to cp if unavailable
-    if command -v rsync &>/dev/null; then
-        rsync -a --exclude='.git' --exclude='__pycache__' \
-              --exclude='*.pyc' --exclude='.env' \
-              --exclude='venv' \
-              "${PROJECT_ROOT}/" "${INSTALL_DIR}/"
-    else
-        cp -r "${PROJECT_ROOT}/." "${INSTALL_DIR}/"
+    if ! command -v rsync &>/dev/null; then
+        echo "ERROR: rsync is required. Install with: apt-get install rsync" >&2
+        exit 1
     fi
+    rsync -a --exclude='.git' --exclude='__pycache__' \
+          --exclude='*.pyc' --exclude='.env' \
+          --exclude='venv' \
+          "${PROJECT_ROOT}/" "${INSTALL_DIR}/"
 else
     echo "    Project root not detected next to deploy/. Skipping file copy."
     echo "    Ensure code is already present in ${INSTALL_DIR}."
 fi
+
+python3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)" \
+    || { echo "ERROR: Python 3.11+ required. Found: $(python3 --version)"; exit 1; }
 
 echo "==> [3/7] Creating Python virtual environment..."
 if [[ ! -d "${INSTALL_DIR}/venv" ]]; then
@@ -60,6 +62,7 @@ echo "==> [5/7] Setting up environment file..."
 if [[ ! -f "${INSTALL_DIR}/.env" ]]; then
     if [[ -f "${INSTALL_DIR}/.env.example" ]]; then
         cp "${INSTALL_DIR}/.env.example" "${INSTALL_DIR}/.env"
+        chmod 600 "${INSTALL_DIR}/.env"
         echo "    Copied .env.example to .env — REMEMBER to fill in your API keys!"
     else
         echo "    WARNING: .env.example not found. Create ${INSTALL_DIR}/.env manually."
