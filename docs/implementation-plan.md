@@ -1,8 +1,8 @@
 # Forex AI Trading System — Full Implementation Plan
 
-**Last updated:** 2026-04-19  
-**Test status:** 141/141 passing  
-**Backend status:** Fully functional in paper mode — all bugs fixed  
+**Last updated:** 2026-04-22  
+**Test status:** 205/205 passing  
+**Backend status:** Fully functional — paper + live mode implemented  
 **API:** FastAPI in `api/` — run with `uvicorn api.main:app --host 0.0.0.0 --port 8000`  
 **Frontend:** Next.js 16 in `frontend/` — deploy to Vercel, set `NEXT_PUBLIC_API_URL`
 
@@ -91,16 +91,16 @@
 
 ---
 
-## Phase 6: Live Deployment & Monitoring ❌ NOT STARTED
+## Phase 6: Live Deployment & Monitoring ✅ COMPLETE
 
 | # | Task | Status |
 |---|------|--------|
-| 6.1 | LiveBroker full implementation (MT5 via MetaApi or direct) | ❌ |
-| 6.2 | `BROKER_MODE=live` guard lifted + integration tests | ❌ |
-| 6.3 | Production environment setup (VPS/cloud, systemd service) | ❌ |
-| 6.4 | Alerting — email/Telegram on trade open/close/error | ❌ |
-| 6.5 | Go-live criteria checklist (min backtest P&L, max drawdown threshold) | ❌ |
-| 6.6 | Monitoring dashboard (Grafana or built-in log viewer) | ❌ |
+| 6.1 | LiveBroker full implementation (MT5 direct via MetaTrader5 library) | ✅ |
+| 6.2 | `BROKER_MODE=live` guard lifted + integration tests | ✅ |
+| 6.3 | Production environment setup (systemd service, install/update scripts) | ✅ |
+| 6.4 | Alerting — email/Telegram on trade open/close/error | ✅ |
+| 6.5 | Go-live criteria checklist (`scripts/check_golive.py`) | ✅ |
+| 6.6 | Monitoring dashboard — built-in log viewer (`GET /api/logs` + LogViewer tab) | ✅ |
 
 ---
 
@@ -114,12 +114,11 @@
 | 4 — Performance Tracking | ✅ Complete | ✅ |
 | Pre-5 bugs (B1, B2) | ✅ Fixed | — |
 | 5 — Frontend (Vercel) | ✅ Complete | — |
-| 6 — Live Deployment | ❌ Not started | — |
+| 6 — Live Deployment | ✅ Complete | ✅ (205/205) |
 
 ## Recommended Next Steps
 
-1. ~~Fix B1: add `BROKER_MODE` and `PAPER_BALANCE` to `config.py` and `.env.example`~~ ✅
-2. ~~Fix B2: add missing deps to `requirements.txt`~~ ✅
-3. Push pending commits to GitHub
-4. Start Phase 5 (frontend dashboard on Vercel)
-5. Start Phase 6 (live deployment) after Phase 5 ships
+1. Run `python scripts/check_golive.py` after paper trading to verify go-live criteria
+2. Configure `.env` with MT5 credentials, Telegram/email alerts
+3. Deploy to VPS: `sudo bash deploy/install.sh`
+4. Switch to live: set `BROKER_MODE=live` in `.env`, restart service
