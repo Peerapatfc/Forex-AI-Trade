@@ -46,17 +46,6 @@ def test_get_logs_returns_200_with_expected_keys(tmp_path, db_with_logs):
     assert "db_errors" in data
 
 
-def test_get_logs_file_logs_is_list(tmp_path, db_with_logs):
-    """file_logs is always a list (even with no log file)."""
-    with patch("api.routes.logs.get_db_path", return_value=db_with_logs):
-        with patch("api.routes.logs.LOG_FILE") as mock_path:
-            mock_path.exists.return_value = False
-            response = client.get("/api/logs")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data["file_logs"], list)
-    assert data["file_logs"] == []
-
 
 def test_get_logs_no_log_file_returns_empty_file_logs(db_with_logs):
     """When log file doesn't exist, file_logs is an empty list."""
@@ -156,3 +145,20 @@ def test_get_logs_lines_param_validation_too_high():
     """lines=1001 should return 422 (le=1000 constraint)."""
     response = client.get("/api/logs?lines=1001")
     assert response.status_code == 422
+
+
+def test_get_logs_db_errors_empty_on_missing_table(tmp_path):
+    """When DB has no fetch_log table, db_errors returns [] not 500."""
+    # Create an empty DB without running init_db (no tables)
+    empty_db = str(tmp_path / "empty.db")
+    conn = sqlite3.connect(empty_db)
+    conn.close()
+
+    with patch("api.routes.logs.get_db_path", return_value=empty_db):
+        with patch("api.routes.logs.LOG_FILE") as mock_path:
+            mock_path.exists.return_value = False
+            response = client.get("/api/logs")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["db_errors"] == []

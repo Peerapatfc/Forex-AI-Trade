@@ -77,9 +77,10 @@ function FileLogPane({ lines }: { lines: FileLogLine[] }) {
 export function LogViewer() {
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const { data, isLoading, error } = useSWR<LogsResponse>(
-    [`/api/logs`, refreshKey],
-    ([url]) => fetcher(url as string)
+  const { data, error, isLoading } = useSWR<LogsResponse>(
+    ['/api/logs', refreshKey],
+    fetcher,
+    { refreshInterval: 30000 }
   );
 
   return (

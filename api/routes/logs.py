@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from pathlib import Path
 
@@ -7,7 +8,7 @@ from api.deps import get_db_path
 
 router = APIRouter()
 
-LOG_FILE = Path("forex_ai.log")
+LOG_FILE = Path(os.getenv("LOG_FILE", str(Path(__file__).parents[2] / "forex_ai.log")))
 
 
 @router.get("/logs")
@@ -23,11 +24,14 @@ def get_logs(lines: int = Query(default=200, ge=1, le=1000)):
     db_path = get_db_path()
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
+    db_errors = []
     try:
         rows = conn.execute(
             "SELECT * FROM fetch_log WHERE status='error' ORDER BY timestamp DESC LIMIT 100"
         ).fetchall()
         db_errors = [dict(row) for row in rows]
+    except sqlite3.OperationalError:
+        db_errors = []
     finally:
         conn.close()
 
