@@ -74,6 +74,25 @@ export interface Stats {
   max_drawdown_usd: number;
 }
 
+export interface FileLogLine {
+  line: string;
+}
+
+export interface DbError {
+  timestamp: number | null;
+  pair: string | null;
+  timeframe: string | null;
+  provider: string | null;
+  status: string;
+  error_msg: string | null;
+  duration_ms: number | null;
+}
+
+export interface LogsResponse {
+  file_logs: FileLogLine[];
+  db_errors: DbError[];
+}
+
 export interface StatusResponse {
   pair: string;
   balance: number;

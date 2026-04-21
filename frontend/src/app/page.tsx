@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import useSWR from 'swr';
 import dynamic from 'next/dynamic';
 
@@ -9,6 +10,7 @@ import { StatusBar } from '@/components/StatusBar';
 import { StatsPanel } from '@/components/StatsPanel';
 import { SignalFeed } from '@/components/SignalFeed';
 import { TradeLog } from '@/components/TradeLog';
+import { LogViewer } from '@/components/LogViewer';
 
 // Chart components use browser-only APIs — disable SSR
 const PriceChart = dynamic(
@@ -32,7 +34,10 @@ const PAIR = 'EURUSD';
 const TIMEFRAME = '15m';
 const REFRESH = 30_000; // 30 s
 
+type BottomTab = 'trades' | 'logs';
+
 export default function Dashboard() {
+  const [bottomTab, setBottomTab] = useState<BottomTab>('trades');
   const { data: status } = useSWR<StatusResponse>(
     `/api/status`,
     fetcher,
@@ -98,12 +103,36 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Trade log */}
-      <div className="h-64 shrink-0 border-t border-slate-800 bg-slate-900 overflow-hidden">
-        <TradeLog
-          open={trades?.open ?? []}
-          closed={trades?.closed ?? []}
-        />
+      {/* Bottom panel — Trade Log / Logs tabs */}
+      <div className="h-72 shrink-0 border-t border-slate-800 bg-slate-900 overflow-hidden flex flex-col">
+        {/* Tab bar */}
+        <div className="flex shrink-0 border-b border-slate-800">
+          {(['trades', 'logs'] as BottomTab[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setBottomTab(tab)}
+              className={`px-5 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                bottomTab === tab
+                  ? 'text-slate-100 border-b-2 border-blue-500'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              {tab === 'trades' ? 'Trade Log' : 'Logs'}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {bottomTab === 'trades' ? (
+            <TradeLog
+              open={trades?.open ?? []}
+              closed={trades?.closed ?? []}
+            />
+          ) : (
+            <LogViewer />
+          )}
+        </div>
       </div>
     </div>
   );
