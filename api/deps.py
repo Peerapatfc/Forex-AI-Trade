@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def get_db_path() -> str:
-    return os.getenv("DB_PATH", "forex.db")
+def get_db_url() -> str:
+    return os.getenv("DATABASE_URL", "")
 
 
 def get_paper_balance() -> float:

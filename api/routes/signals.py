@@ -1,8 +1,8 @@
-import sqlite3
-
+import psycopg2
+import psycopg2.extras
 from fastapi import APIRouter, Query
 
-from api.deps import get_db_path
+from api.deps import get_db_url
 
 router = APIRouter()
 
@@ -13,23 +13,23 @@ def get_signals(
     timeframe: str = Query("15m"),
     n: int = Query(50, ge=1, le=500),
 ):
-    db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(get_db_url())
     try:
-        rows = conn.execute(
-            """
-            SELECT id, timestamp, direction, confidence,
-                   claude_direction, claude_confidence,
-                   gemini_direction, gemini_confidence,
-                   reasoning, sl_pips, tp_pips, created_at
-            FROM signals
-            WHERE pair = ? AND timeframe = ?
-            ORDER BY timestamp DESC
-            LIMIT ?
-            """,
-            (pair, timeframe, n),
-        ).fetchall()
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT id, timestamp, direction, confidence,
+                       claude_direction, claude_confidence,
+                       gemini_direction, gemini_confidence,
+                       reasoning, sl_pips, tp_pips, created_at
+                FROM signals
+                WHERE pair = %s AND timeframe = %s
+                ORDER BY timestamp DESC
+                LIMIT %s
+                """,
+                (pair, timeframe, n),
+            )
+            rows = cur.fetchall()
     finally:
         conn.close()
 

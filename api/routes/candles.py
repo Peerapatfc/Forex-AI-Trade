@@ -1,8 +1,8 @@
-import sqlite3
-
+import psycopg2
+import psycopg2.extras
 from fastapi import APIRouter, Query
 
-from api.deps import get_db_path
+from api.deps import get_db_url
 
 router = APIRouter()
 
@@ -13,23 +13,23 @@ def get_candles(
     timeframe: str = Query("15m"),
     n: int = Query(200, ge=1, le=1000),
 ):
-    db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(get_db_url())
     try:
-        rows = conn.execute(
-            """
-            SELECT c.timestamp AS time,
-                   c.open, c.high, c.low, c.close, c.volume,
-                   i.ema20, i.ema50, i.ema200
-            FROM candles c
-            LEFT JOIN indicators i ON i.candle_id = c.id
-            WHERE c.pair = ? AND c.timeframe = ?
-            ORDER BY c.timestamp DESC
-            LIMIT ?
-            """,
-            (pair, timeframe, n),
-        ).fetchall()
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT c.timestamp AS time,
+                       c.open, c.high, c.low, c.close, c.volume,
+                       i.ema20, i.ema50, i.ema200
+                FROM candles c
+                LEFT JOIN indicators i ON i.candle_id = c.id
+                WHERE c.pair = %s AND c.timeframe = %s
+                ORDER BY c.timestamp DESC
+                LIMIT %s
+                """,
+                (pair, timeframe, n),
+            )
+            rows = cur.fetchall()
     finally:
         conn.close()
 

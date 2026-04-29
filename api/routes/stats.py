@@ -1,22 +1,20 @@
-import sqlite3
-
+import psycopg2
+import psycopg2.extras
 from fastapi import APIRouter, Query
 from fastapi.exceptions import HTTPException
 
-from api.deps import get_db_path
+from api.deps import get_db_url
 
 router = APIRouter()
 
 
 @router.get("/stats")
 def get_stats(pair: str = Query("EURUSD")):
-    db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(get_db_url())
     try:
-        row = conn.execute(
-            "SELECT * FROM stats WHERE pair = ?", (pair,)
-        ).fetchone()
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM stats WHERE pair = %s", (pair,))
+            row = cur.fetchone()
     finally:
         conn.close()
 

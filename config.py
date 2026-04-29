@@ -5,7 +5,7 @@ load_dotenv()
 
 # Data provider
 ALPHA_VANTAGE_API_KEY: str = os.getenv("ALPHA_VANTAGE_API_KEY", "")
-DB_PATH: str = os.getenv("DB_PATH", "forex.db")
+DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 
 # Trading parameters
 PAIR: str = "EURUSD"
