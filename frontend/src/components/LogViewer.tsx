@@ -78,7 +78,7 @@ export function LogViewer() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const { data, error, isLoading } = useSWR<LogsResponse>(
-    ['/api/logs', refreshKey],
+    `/api/logs?_=${refreshKey}`,
     fetcher,
     { refreshInterval: 30000 }
   );
