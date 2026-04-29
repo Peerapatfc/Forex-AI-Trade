@@ -20,18 +20,20 @@ def get_logs(lines: int = Query(default=200, ge=1, le=1000)):
             all_lines = f.readlines()
         file_logs = [{"line": ln.rstrip()} for ln in all_lines[-lines:]]
 
-    conn = psycopg2.connect(get_db_url())
     db_errors = []
     try:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            try:
+        conn = psycopg2.connect(get_db_url())
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
                     "SELECT * FROM fetch_log WHERE status='error' ORDER BY timestamp DESC LIMIT 100"
                 )
                 db_errors = [dict(r) for r in cur.fetchall()]
-            except psycopg2.Error:
-                db_errors = []
-    finally:
-        conn.close()
+        except psycopg2.Error:
+            db_errors = []
+        finally:
+            conn.close()
+    except psycopg2.Error:
+        db_errors = []
 
     return {"file_logs": file_logs, "db_errors": db_errors}
