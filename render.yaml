@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: forex-ai-api
+    runtime: python
+    buildCommand: pip install -r requirements-server.txt
+    startCommand: bash start.sh
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: BROKER_MODE
+        value: paper
+      - key: DB_PATH
+        value: forex.db
+      - key: ALPHA_VANTAGE_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PAPER_BALANCE
+        value: "10000.0"
+      - key: RISK_PCT
+        value: "0.01"
