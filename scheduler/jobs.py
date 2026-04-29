@@ -22,7 +22,7 @@ def create_scheduler(broker: Broker, alerter=None) -> BlockingScheduler:
             minutes=interval_minutes,
             id=f"fetch_{timeframe}",
             kwargs={
-                "db_path": config.DB_PATH,
+                "db_path": config.DATABASE_URL,
                 "api_key": config.ALPHA_VANTAGE_API_KEY,
                 "pair": config.PAIR,
                 "timeframe": timeframe,
@@ -40,7 +40,7 @@ def create_scheduler(broker: Broker, alerter=None) -> BlockingScheduler:
         minutes=15,
         id="analyze_15m",
         kwargs={
-            "db_path": config.DB_PATH,
+            "db_path": config.DATABASE_URL,
             "pair": config.PAIR,
             "timeframe": "15m",
         },
@@ -54,7 +54,7 @@ def create_scheduler(broker: Broker, alerter=None) -> BlockingScheduler:
         minutes=15,
         id="execute_15m",
         kwargs={
-            "db_path": config.DB_PATH,
+            "db_path": config.DATABASE_URL,
             "pair": config.PAIR,
             "timeframe": "15m",
             "broker": broker,
@@ -70,7 +70,7 @@ def create_scheduler(broker: Broker, alerter=None) -> BlockingScheduler:
         trigger="interval",
         minutes=15,
         id="stats_15m",
-        kwargs={"db_path": config.DB_PATH, "pair": config.PAIR},
+        kwargs={"db_path": config.DATABASE_URL, "pair": config.PAIR},
         misfire_grace_time=15 * 60,
     )
     logger.info("Scheduled %s 15m stats job every 15 minutes", config.PAIR)
