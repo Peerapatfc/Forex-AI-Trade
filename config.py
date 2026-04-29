@@ -17,7 +17,7 @@ RISK_PCT: float = float(os.getenv("RISK_PCT", "0.01"))  # 1% risk per trade
 ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # Broker
 BROKER_MODE: str = os.getenv("BROKER_MODE", "paper")

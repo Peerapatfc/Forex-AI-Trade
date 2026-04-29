@@ -64,12 +64,15 @@ def test_get_latest_signals_respects_pair_and_timeframe(db_path):
 
 
 def test_write_signal_stores_all_fields(db_path):
-    import sqlite3
+    import psycopg2
     store.write_signal(db_path, _SIGNAL)
-    conn = sqlite3.connect(db_path)
-    row = conn.execute("SELECT * FROM signals WHERE timestamp=?",
-                       (_SIGNAL["timestamp"],)).fetchone()
-    conn.close()
+    conn = psycopg2.connect(db_path)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT direction FROM signals WHERE timestamp = %s",
+                        (_SIGNAL["timestamp"],))
+            row = cur.fetchone()
+    finally:
+        conn.close()
     assert row is not None
-    # direction is at index 5 (id, pair, timeframe, timestamp, created_at, direction)
-    assert row[5] == "BUY"
+    assert row[0] == "BUY"

@@ -1,16 +1,21 @@
-import sqlite3
 import pytest
+import psycopg2
 import pandas as pd
 from unittest.mock import patch
 from storage import store
 
 
 def test_init_db_creates_tables(db_path):
-    conn = sqlite3.connect(db_path)
-    tables = {r[0] for r in conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table'"
-    ).fetchall()}
-    conn.close()
+    conn = psycopg2.connect(db_path)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema = 'public'"
+            )
+            tables = {r[0] for r in cur.fetchall()}
+    finally:
+        conn.close()
     assert {"candles", "indicators", "fetch_log", "signals"} <= tables
 
 
@@ -40,19 +45,27 @@ def test_write_indicators_stores_all_fields(db_path):
            "atr14": 0.0008, "stoch_k": 60.0, "stoch_d": 58.0}
     store.write_indicators(db_path, candle_id, ind)
 
-    conn = sqlite3.connect(db_path)
-    row = conn.execute("SELECT * FROM indicators WHERE candle_id=?", (candle_id,)).fetchone()
-    conn.close()
+    conn = psycopg2.connect(db_path)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT ema20 FROM indicators WHERE candle_id = %s", (candle_id,))
+            row = cur.fetchone()
+    finally:
+        conn.close()
     assert row is not None
-    assert abs(row[2] - 1.0850) < 1e-6  # ema20 is column index 2
+    assert abs(row[0] - 1.0850) < 1e-6
 
 
 def test_write_fetch_log_stores_entry(db_path):
     store.write_fetch_log(db_path, "EURUSD", "15m", "alpha_vantage", "ok", None, 312)
 
-    conn = sqlite3.connect(db_path)
-    row = conn.execute("SELECT provider, status, duration_ms FROM fetch_log").fetchone()
-    conn.close()
+    conn = psycopg2.connect(db_path)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT provider, status, duration_ms FROM fetch_log")
+            row = cur.fetchone()
+    finally:
+        conn.close()
     assert row == ("alpha_vantage", "ok", 312)
 
 
@@ -155,30 +168,36 @@ def test_run_fetch_cycle_writes_candles(mock_fetch, db_path):
 
 @patch("data.fetcher.fetch_candles")
 def test_run_fetch_cycle_writes_fetch_log_ok(mock_fetch, db_path):
-    import sqlite3
     from data.fetcher import run_fetch_cycle
     mock_fetch.return_value = (_MOCK_5_CANDLES, "alpha_vantage")
 
     run_fetch_cycle(db_path, "fake_key", "EURUSD", "15m")
 
-    conn = sqlite3.connect(db_path)
-    rows = conn.execute("SELECT provider, status FROM fetch_log").fetchall()
-    conn.close()
+    conn = psycopg2.connect(db_path)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT provider, status FROM fetch_log")
+            rows = cur.fetchall()
+    finally:
+        conn.close()
     assert len(rows) == 1
     assert rows[0] == ("alpha_vantage", "ok")
 
 
 @patch("data.fetcher.fetch_candles")
 def test_run_fetch_cycle_logs_skipped_when_both_fail(mock_fetch, db_path):
-    import sqlite3
     from data.fetcher import run_fetch_cycle
     mock_fetch.side_effect = RuntimeError("Both providers failed")
 
     run_fetch_cycle(db_path, "fake_key", "EURUSD", "15m")
 
-    conn = sqlite3.connect(db_path)
-    row = conn.execute("SELECT status FROM fetch_log").fetchone()
-    conn.close()
+    conn = psycopg2.connect(db_path)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT status FROM fetch_log")
+            row = cur.fetchone()
+    finally:
+        conn.close()
     assert row[0] == "skipped"
 
 
